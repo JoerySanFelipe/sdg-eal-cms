@@ -18,6 +18,7 @@
   <script src="./js/core-ui.js" defer></script>
   <script src="./js/visual-media.js" defer></script>
   <script src="./js/impact-feeds.js" defer></script>
+  <script src="./js/firebase-public-sync.js" defer></script>
 </head>
 
 <body class="bg-canvas text-muted font-sans antialiased min-h-screen flex flex-col relative z-0">
@@ -37,7 +38,7 @@
         <div class="mb-12 grid grid-cols-1 items-start gap-8 lg:grid-cols-2 lg:gap-12">
 
           <div class="reveal-on-scroll" style="transition-delay: 100ms;">
-            <div
+            <div id="smart-eco-award-container"
               class="relative mx-auto aspect-[3/4] w-full max-w-lg overflow-hidden rounded-xl bg-canvas shadow-md lg:aspect-[4/5] lg:max-w-none border border-black/5">
               <img src="./images/smart-eco-assets/ui-gm2.jpg" alt="UI GreenMetric Award" loading="lazy"
                 class="slider-img absolute inset-0 h-full w-full object-contain p-2 opacity-100 transition-opacity duration-1000 ease-in-out" />
@@ -48,12 +49,12 @@
 
           <div class="reveal-on-scroll ucu-prose-narrative" style="transition-delay: 200ms;">
             <h3 class="mb-1.5 text-xs font-bold uppercase tracking-[0.15rem] text-ucu-red">Global Recognition</h3>
-            <h2 class="mb-5 text-3xl font-extrabold leading-tight text-ucu-blue-dark md:text-4xl">An Academic Milestone
-            </h2>
-            <p>The UI GreenMetric World University Rankings evaluates green campuses and environmental sustainability
-              across 39 indicators in 6 criteria.</p>
-            <p>As a first try for UCU in this global ranking, it is an academic milestone worthy of celebration.</p>
-            <p style="color: var(--color-ucu-red); font-weight: 500; font-style: italic;">
+            <h2 class="mb-5 text-3xl font-extrabold leading-tight text-ucu-blue-dark md:text-4xl">An Academic Milestone</h2>
+            <div id="smart-eco-narrative-paragraphs" class="space-y-3">
+              <p>The UI GreenMetric World University Rankings evaluates green campuses and environmental sustainability across 39 indicators in 6 criteria.</p>
+              <p>As a first try for UCU in this global ranking, it is an academic milestone worthy of celebration.</p>
+            </div>
+            <p id="smart-eco-callout" style="color: var(--color-ucu-red); font-weight: 500; font-style: italic;" class="mt-4">
               Congratulations, UCUians! Mabuhay ang Urdaneta City University!
             </p>
           </div>
@@ -66,7 +67,7 @@
             Out of 1,477 universities worldwide in 2025, WE ARE:
           </h4>
 
-          <div class="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-[1.2fr_repeat(3,1fr)]">
+          <div id="smart-eco-milestones-grid" class="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-[1.2fr_repeat(3,1fr)]">
 
             <div
               class="group relative flex flex-col items-center justify-center overflow-hidden rounded-2xl border-2 border-ucu-yellow/30 bg-ucu-blue-dark p-8 text-center shadow-sm transition-all duration-[400ms] ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-2 hover:shadow-xl md:col-span-2 lg:col-span-1 lg:row-span-2 lg:p-10">
@@ -119,9 +120,12 @@
       </section>
 
       <section class="reveal-on-scroll" style="transition-delay: 100ms;">
-        <h2 class="mb-10 text-center text-3xl font-extrabold tracking-widest text-ucu-red">
-          SUSTAINABILITY INDICATORS
-        </h2>
+        <div class="flex items-center gap-4 mb-8">
+          <h2 class="text-2xl sm:text-3xl md:text-4xl font-black text-ucu-blue-dark tracking-tight">
+            Sustainability Indicators
+          </h2>
+          <div class="flex-1 h-px bg-slate-200"></div>
+        </div>
 
         <div class="group/gallery flex h-[640px] w-full flex-col gap-3 md:h-[400px] md:flex-row">
 
@@ -246,13 +250,16 @@
   <ucu-footer base-path="./" class="reveal-on-scroll"></ucu-footer>
 
   <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      // Localized Script: UI GreenMetric Image Crossfade 
-      // Maintained locally as it is specific to the dual images on this page
-      const sliderImages = document.querySelectorAll(".slider-img");
+    let ucuSmartEcoSliderTimer = null;
+    window.initSmartEcoSlider = function() {
+      if (ucuSmartEcoSliderTimer) {
+        clearInterval(ucuSmartEcoSliderTimer);
+        ucuSmartEcoSliderTimer = null;
+      }
+      const sliderImages = document.querySelectorAll("#smart-eco-award-container .slider-img");
       if (sliderImages.length > 1) {
         let currentSlide = 0;
-        setInterval(() => {
+        ucuSmartEcoSliderTimer = setInterval(() => {
           sliderImages[currentSlide].classList.remove("opacity-100");
           sliderImages[currentSlide].classList.add("opacity-0");
 
@@ -262,7 +269,8 @@
           sliderImages[currentSlide].classList.add("opacity-100");
         }, 4000);
       }
-    });
+    };
+    document.addEventListener("DOMContentLoaded", window.initSmartEcoSlider);
   </script>
 </body>
 

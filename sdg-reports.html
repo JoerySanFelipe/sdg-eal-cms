@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SDG Reports | Urdaneta City University</title>
+  <meta name="description" content="Urdaneta City University (UCU) Sustainable Development Goals (SDG) Reports. Documenting verifiable institutional impact for THE Impact Rankings and UI GreenMetric.">
+  <meta name="keywords" content="UCU, SDG, Sustainable Development Goals, THE Impact Rankings, UI GreenMetric, SDG Reports, Urdaneta City University">
+  <meta property="og:title" content="SDG Reports | UCU">
+  <meta property="og:description" content="Explore UCU's contributions to all 17 Sustainable Development Goals.">
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="./css/style.css">
+  
+  <script src="./js/events-data.js" defer></script>
+  <script src="./js/research-data.js" defer></script>
+  <script src="./js/partners-data.js" defer></script>
+  <script src="./js/institutional-data.js" defer></script>
+  <script src="./js/metrics-registry.js" defer></script>
+
+  <script src="./js/core-ui.js" defer></script>  
+  <script src="./js/visual-media.js" defer></script>
+  <script src="./js/block-renderer.js" defer></script>
+  <script src="./js/global-charts.js" defer></script>
+  <script src="./js/modals.js" defer></script>
+  <script src="./js/impact-feeds.js" defer></script>
+  <script src="./js/sdg-components.js" defer></script>
+  <script src="./js/firebase-public-sync.js" defer></script>
+</head>
+
+<body class="bg-canvas text-main2 font-sans antialiased min-h-screen flex flex-col relative z-0 overflow-x-hidden">
+  
+  <ucu-header base-path="./"></ucu-header>
+
+  <ucu-hero-banner 
+    bg-color="bg-ucu-blue-dark" 
+    eyebrow="Local Action. Global Impact."
+    headline="SDG Reports"
+    highlight="2025"
+    description="Documenting Urdaneta City University’s measurable contributions to the United Nations Sustainable Development Goals through education, research, partnerships, and community-driven initiatives in 2025.">
+  </ucu-hero-banner>
+
+  <main class="w-full flex-grow relative z-10 flex flex-col gap-12 md:gap-16 py-10 md:py-12 bg-canvas">
+    
+    <section class="max-w-[1280px] w-full mx-auto px-4 sm:px-6 lg:px-8 relative z-20 reveal-on-scroll" style="transition-delay: 100ms;">
+      <ucu-metric-cards
+        data-metrics='[
+          {"value": "169", "label": "Targets", "theme": "white", "icon": "target"},
+          {"value": "48", "label": "Events", "theme": "navy", "icon": "calendar"},
+          {"value": "124", "label": "Research", "theme": "red", "icon": "book-open"}
+        ]'
+      ></ucu-metric-cards>
+    </section>
+
+    <section class="max-w-[1280px] w-full mx-auto px-4 sm:px-6 lg:px-8 reveal-on-scroll" style="transition-delay: 200ms;">
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-0 w-full overflow-hidden shadow-lg border border-white/50 bg-white/60">
+        <sdg-card goal-num="1" title="No Poverty" subtitle="End poverty in all its forms everywhere." color="#E5243B" bg-img="./images/sdg/bg/1.png" logo-img="./images/sdg/sdg1.png" targets="7" events="0" research="342" explore-link="sdg-reports/sdg1.html"></sdg-card>
+        <sdg-card goal-num="2" title="Zero Hunger" subtitle="End hunger, achieve food security and improved nutrition." color="#DDA63A" bg-img="./images/sdg/bg/2.png" logo-img="./images/sdg/sdg2.png" targets="8" events="0" research="215" explore-link="sdg-reports/sdg2.html"></sdg-card>
+        <sdg-card goal-num="3" title="Good Health and Well-being" subtitle="Ensure healthy lives and promote well-being for all." color="#4C9F38" bg-img="./images/sdg/bg/3.png" logo-img="./images/sdg/sdg3.png" targets="13" events="0" research="1104" explore-link="sdg-reports/sdg3.html"></sdg-card>
+        <sdg-card goal-num="4" title="Quality Education" subtitle="Ensure inclusive and equitable quality education." color="#C5192D" bg-img="./images/sdg/bg/4.png" logo-img="./images/sdg/sdg4.png" targets="10" events="0" research="890" explore-link="sdg-reports/sdg4.html"></sdg-card>
+        <sdg-card goal-num="5" title="Gender Equality" subtitle="Achieve gender equality and empower all women and girls." color="#FF3A21" bg-img="./images/sdg/bg/5.png" logo-img="./images/sdg/sdg5.png" targets="9" events="0" research="312" explore-link="sdg-reports/sdg5.html"></sdg-card>
+        <sdg-card goal-num="6" title="Clean Water and Sanitation" subtitle="Ensure availability and sustainable management of water." color="#26BDE2" bg-img="./images/sdg/bg/6.png" logo-img="./images/sdg/sdg6.png" targets="8" events="0" research="450" explore-link="sdg-reports/sdg6.html"></sdg-card>
+        <sdg-card goal-num="7" title="Affordable and Clean Energy" subtitle="Ensure access to affordable, reliable, sustainable energy." color="#FCC30B" bg-img="./images/sdg/bg/7.png" logo-img="./images/sdg/sdg7.png" targets="5" events="0" research="678" explore-link="sdg-reports/sdg7.html"></sdg-card>
+        <sdg-card goal-num="8" title="Decent Work and Economic Growth" subtitle="Promote sustained, inclusive and sustainable economic growth." color="#A21942" bg-img="./images/sdg/bg/8.png" logo-img="./images/sdg/sdg8.png" targets="12" events="0" research="534" explore-link="sdg-reports/sdg8.html"></sdg-card>
+        <sdg-card goal-num="9" title="Industry, Innovation and Infrastructure" subtitle="Build resilient infrastructure, promote inclusive industrialization." color="#FD6925" bg-img="./images/sdg/bg/9.png" logo-img="./images/sdg/sdg9.png" targets="8" events="0" research="789" explore-link="sdg-reports/sdg9.html"></sdg-card>
+        <sdg-card goal-num="10" title="Reduced Inequalities" subtitle="Reduce inequality within and among countries." color="#DD1367" bg-img="./images/sdg/bg/10.png" logo-img="./images/sdg/sdg10.png" targets="10" events="0" research="231" explore-link="sdg-reports/sdg10.html"></sdg-card>
+        <sdg-card goal-num="11" title="Sustainable Cities and Communities" subtitle="Make cities and human settlements inclusive, safe, resilient." color="#FD9D24" bg-img="./images/sdg/bg/11.png" logo-img="./images/sdg/sdg11.png" targets="10" events="0" research="645" explore-link="sdg-reports/sdg11.html"></sdg-card>
+        <sdg-card goal-num="12" title="Responsible Consumption and Production" subtitle="Ensure sustainable consumption and production patterns." color="#BF8B2E" bg-img="./images/sdg/bg/12.png" logo-img="./images/sdg/sdg12.png" targets="11" events="0" research="412" explore-link="sdg-reports/sdg12.html"></sdg-card>
+        <sdg-card goal-num="13" title="Climate Action" subtitle="Take urgent action to combat climate change and its impacts." color="#3F7E44" bg-img="./images/sdg/bg/13.png" logo-img="./images/sdg/sdg13.png" targets="5" events="0" research="899" explore-link="sdg-reports/sdg13.html"></sdg-card>
+        <sdg-card goal-num="14" title="Life Below Water" subtitle="Conserve and sustainably use the oceans, seas and marine resources." color="#0A97D9" bg-img="./images/sdg/bg/14.png" logo-img="./images/sdg/sdg14.png" targets="10" events="0" research="210" explore-link="sdg-reports/sdg14.html"></sdg-card>
+        <sdg-card goal-num="15" title="Life on Land" subtitle="Protect, restore and promote sustainable use of terrestrial ecosystems." color="#56C02B" bg-img="./images/sdg/bg/15.png" logo-img="./images/sdg/sdg15.png" targets="12" events="0" research="345" explore-link="sdg-reports/sdg15.html"></sdg-card>
+        <sdg-card goal-num="16" title="Peace, Justice and Strong Institutions" subtitle="Promote peaceful and inclusive societies for sustainable development." color="#00689D" bg-img="./images/sdg/bg/16.png" logo-img="./images/sdg/sdg16.png" targets="12" events="0" research="412" explore-link="sdg-reports/sdg16.html"></sdg-card>
+        <sdg-card goal-num="17" title="Partnerships for the Goals" subtitle="Strengthen the means of implementation and revitalize the global partnership." color="#19486A" bg-img="./images/sdg/bg/17.png" logo-img="./images/sdg/sdg17.jpg" targets="19" events="0" research="126" explore-link="sdg-reports/sdg17.html"></sdg-card>
+        <sdg-see-all-card explore-link="sdg-reports/sdg1.html"></sdg-see-all-card>
+      </div>
+    </section>
+
+  </main>
+
+  <ucu-footer base-path="./" class="reveal-on-scroll"></ucu-footer>
+
+</body>
+</html>

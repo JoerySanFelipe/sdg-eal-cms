@@ -8,7 +8,9 @@ module.exports = {
     "./impact/**/*.html",
     "./indicators/**/*.html",
     "./events/**/*.html",
-    "./evidence/**/*.html"
+    "./evidence/**/*.html",
+    "./admin/**/*.html",
+    "./admin/**/*.js"
   ],
   theme: {
     extend: {

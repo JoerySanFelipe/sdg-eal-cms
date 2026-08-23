@@ -24,10 +24,13 @@ class UcuIndicatorLayout extends HTMLElement {
       { num: "07", title: "Digitalization", img: "images/smart-eco-assets/digitalization.jpg", link: "digitalization.html" },
     ];
 
+    const isPreview = window.location.search.includes('cms_preview=true') || (window.self !== window.top);
+    const previewParam = isPreview ? '?cms_preview=true' : '';
+
     const navHtml = pillars.map(pillar => {
       const isActive = pillar.num === activeNum;
       return `
-        <a href="${base}indicators/${pillar.link}" class="group relative flex-1 aspect-square md:aspect-auto md:h-[148px] overflow-hidden block" title="${pillar.title}">
+        <a href="${base}indicators/${pillar.link}${previewParam}" data-nav-pillar="${pillar.num}" class="group relative flex-1 aspect-square md:aspect-auto md:h-[148px] overflow-hidden block" title="${pillar.title}">
           <div class="h-full w-full overflow-hidden bg-black">
             <img src="${base}${pillar.img}" alt="${pillar.title}" loading="lazy" decoding="async" class="h-full w-full object-cover transition-all duration-[800ms] ease-[cubic-bezier(0.25,1,0.5,1)] ${isActive ? 'scale-100 grayscale-0 brightness-100 opacity-100' : 'scale-110 grayscale-[100%] brightness-50 opacity-60 group-hover:scale-105 group-hover:grayscale-0 group-hover:brightness-100 group-hover:opacity-100'}" />
           </div>
@@ -45,29 +48,62 @@ class UcuIndicatorLayout extends HTMLElement {
       "06": "images/indicator-icons/education.png",
       "07": "images/indicator-icons/digitalization.png",
     };
-    const defaultIcon = activeIcons[activeNum] ? (base + activeIcons[activeNum]) : (base + "images/smart-eco-assets/ui-green-seal.png");
+    const attrEvidenceThumb = this.getAttribute('evidence-thumb');
+    const defaultIcon = attrEvidenceThumb 
+      ? (attrEvidenceThumb.startsWith('data:') || attrEvidenceThumb.startsWith('http') || attrEvidenceThumb.startsWith('blob:') ? attrEvidenceThumb : (base + attrEvidenceThumb.replace(/^\.\.\//, '').replace(/^\.\//, '')))
+      : (activeIcons[activeNum] ? (base + activeIcons[activeNum]) : (base + "images/smart-eco-assets/ui-green-seal.png"));
 
-    const cardsHtml = evidenceManifest.map(ev => {
+    // Deduplicate and natural numerical sort on evidence items
+    const seen = new Set();
+    const uniqueManifest = [];
+    for (const ev of evidenceManifest) {
+      if (!ev) continue;
+      const key = (ev.codeID || ev.id || '').trim();
+      if (key && !seen.has(key)) {
+        seen.add(key);
+        uniqueManifest.push(ev);
+      } else if (!key) {
+        uniqueManifest.push(ev);
+      }
+    }
+    const sortedManifest = uniqueManifest.sort((a, b) => {
+      const codeA = (a.codeID || a.id || '').replace(/^modal-/, '').replace(/_/g, '.');
+      const codeB = (b.codeID || b.id || '').replace(/^modal-/, '').replace(/_/g, '.');
+      return codeA.localeCompare(codeB, undefined, { numeric: true, sensitivity: 'base' });
+    });
+
+    const cardsHtml = sortedManifest.map(ev => {
       const sdgsString = ev.relatedSdgs ? JSON.stringify(ev.relatedSdgs) : '';
+      const hasCustomThumb = ev.thumb_evidence && 
+        ev.thumb_evidence !== 'images/smart-eco-assets/ui-green-seal.png' && 
+        !ev.thumb_evidence.startsWith('images/indicator-icons/') &&
+        !ev.thumb_evidence.startsWith('../images/indicator-icons/');
+      const rawImg = hasCustomThumb ? ev.thumb_evidence : defaultIcon;
+      const cardImg = rawImg.startsWith('http') || rawImg.startsWith('data:') || rawImg.startsWith('blob:') || rawImg.startsWith(base) 
+        ? rawImg 
+        : (base + rawImg.replace(/^\.\.\//, '').replace(/^\.\//, ''));
+
       return `
       <ucu-evidence-card 
         title="${ev.title}" 
         meta="UI GreenMetric" 
-        img="${ev.img || defaultIcon}" 
+        img="${cardImg}" 
         evidence-id="${ev.id}"
         data-sdgs='${sdgsString}'>
       </ucu-evidence-card>
       `;
     }).join("");
 
-    const modalsHtml = evidenceManifest.map(ev => {
+    const modalsHtml = sortedManifest.map(ev => {
       const sdgsString = ev.relatedSdgs ? JSON.stringify(ev.relatedSdgs) : '';
+      const blocksString = ev.blocks ? JSON.stringify(ev.blocks) : '';
       return `
       <ucu-modal-shell 
         modal-id="${ev.id}" 
         title="${ev.title}" 
         badge="${ev.badge}" 
         content-src="${ev.src}"
+        data-blocks='${blocksString}'
         data-sdgs='${sdgsString}'>
       </ucu-modal-shell>
       `;
@@ -108,21 +144,36 @@ class UcuIndicatorLayout extends HTMLElement {
       ${modalsHtml}
     `;
 
-    setTimeout(() => this.initReveal(), 100);
+    this.initReveal();
+    if (typeof window.ucuInitScrollReveal === 'function') {
+      window.ucuInitScrollReveal(this);
+    }
   }
 
   initReveal() {
     const revealTargets = this.querySelectorAll(".reveal");
     if (revealTargets.length > 0) {
+      const isIframe = window.self !== window.top || window.location.search.includes('cms_preview=true');
+      if (isIframe || !('IntersectionObserver' in window)) {
+        revealTargets.forEach(el => el.classList.remove("opacity-0", "translate-y-8"));
+        return;
+      }
+
       const observer = new IntersectionObserver((entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              entry.target.classList.remove("opacity-0", "translate-y-8");
-              observer.unobserve(entry.target);
-            }
-          });
-        }, { threshold: 0.1, rootMargin: "0px 0px -50px 0px" });
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.remove("opacity-0", "translate-y-8");
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.01, rootMargin: "100px 0px" });
+
       revealTargets.forEach((el) => observer.observe(el));
+
+      // Safety fallback to guarantee elements are revealed
+      setTimeout(() => {
+        revealTargets.forEach(el => el.classList.remove("opacity-0", "translate-y-8"));
+      }, 300);
     }
   }
 }
@@ -160,7 +211,7 @@ class UcuEvidenceCard extends HTMLElement {
     }
 
     this.innerHTML = `
-      <button class="ucu-evidence-trigger group relative w-full text-left flex items-stretch gap-4 bg-white p-4 rounded-2xl border border-black/5 overflow-hidden transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-gray-50 hover:-translate-y-1 hover:translate-x-1 hover:shadow-[0_8px_20px_rgba(0,0,0,0.06)]">
+      <button type="button" data-modal-trigger="${evidenceId}" data-evidence-id="${evidenceId}" class="ucu-evidence-trigger group relative w-full text-left flex items-stretch gap-4 bg-white p-4 rounded-2xl border border-black/5 overflow-hidden transition-all duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] hover:bg-gray-50 hover:-translate-y-1 hover:translate-x-1 hover:shadow-[0_8px_20px_rgba(0,0,0,0.06)] cursor-pointer">
         <span class="absolute left-0 top-0 h-full w-[4px] bg-gradient-to-b from-ucu-blue-dark to-ucu-red origin-bottom scale-y-0 transition-transform duration-400 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-y-100"></span>
         <div class="h-[52px] w-[52px] shrink-0 overflow-hidden rounded-xl border-2 border-white shadow-[0_4px_10px_rgba(0,0,0,0.1)]">
           <img src="${img}" alt="${title} Documentation" loading="lazy" decoding="async" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" />
@@ -175,10 +226,13 @@ class UcuEvidenceCard extends HTMLElement {
       </button>
     `;
 
-    this.querySelector('.ucu-evidence-trigger').addEventListener('click', () => {
-      window.history.pushState({}, '', '?evidence=' + evidenceId);
-      window.dispatchEvent(new Event('popstate'));
-    });
+    const btn = this.querySelector('.ucu-evidence-trigger');
+    if (btn) {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        window.ucuOpenModal(evidenceId);
+      });
+    }
   }
 }
 

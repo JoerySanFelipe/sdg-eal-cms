@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SDG Research Archive | Urdaneta City University</title>
+  <meta name="description" content="Explore peer-reviewed publications, institutional studies, and academic contributions aligned with the United Nations Sustainable Development Goals.">
+  <meta name="keywords" content="UCU, Research, SDG Research, Academic Archive, Sustainable Development Goals, Urdaneta City University">
+  <meta property="og:title" content="SDG Research Archive | UCU">
+  <meta property="og:description" content="An open-access archive of Urdaneta City University's SDG research contributions.">
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="./css/style.css">
+  
+  <script src="./js/research-data.js" defer></script>
+  <script src="./js/institutional-data.js" defer></script>
+
+  <script src="./js/core-ui.js" defer></script>
+  <script src="./js/visual-media.js" defer></script>
+  <script src="./js/block-renderer.js" defer></script>
+  <script src="./js/global-charts.js" defer></script>
+  <script src="./js/impact-feeds.js" defer></script>
+  <script src="./js/firebase-public-sync.js" defer></script>
+</head>
+
+<body class="bg-canvas text-main2 font-sans antialiased min-h-screen flex flex-col relative z-0 overflow-x-hidden">
+  
+  <ucu-header base-path="./"></ucu-header>
+
+  <ucu-hero-banner 
+    class="block w-full min-h-[320px] md:min-h-[360px] reveal-on-scroll"
+    bg-color="bg-ucu-blue-dark" 
+    eyebrow="Institutional Archive"
+    headline="SDG Research"
+    highlight="Archive."
+    description="An open-access archive of Urdaneta City University's academic contributions. Explore peer-reviewed publications, institutional studies, and localized research directly aligned with the United Nations' Sustainable Development Goals.">
+  </ucu-hero-banner>
+
+  <main class="w-full flex-grow relative z-10 flex flex-col gap-8 md:gap-12 py-10 md:py-12 bg-canvas">
+    <section class="max-w-[1280px] w-full mx-auto px-4 sm:px-6 lg:px-8 relative z-20 reveal-on-scroll" style="transition-delay: 100ms;">
+      <div id="research-feed-container" class="w-full">
+        <ucu-research-feed></ucu-research-feed>
+      </div>
+    </section>
+  </main>
+
+  <ucu-footer base-path="./" class="reveal-on-scroll"></ucu-footer>
+
+</body>
+</html>

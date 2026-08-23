@@ -3,56 +3,85 @@
   Data-driven components for SDG Reports and Landing Pages.
 */
 
+// Global Available Years Resolver
+window.ucuGetGlobalAvailableYears = (attrYears) => {
+  let yearsPool = [2025, 2024, 2023];
+  try {
+    const stored = localStorage.getItem('UCU_AVAILABLE_YEARS');
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed)) yearsPool = [...yearsPool, ...parsed.map(y => parseInt(y, 10))];
+    }
+  } catch (e) {}
+  if (attrYears) {
+    const splitArr = String(attrYears).split(',').map(y => parseInt(y.trim(), 10)).filter(y => !isNaN(y));
+    yearsPool = [...yearsPool, ...splitArr];
+  }
+  return Array.from(new Set(yearsPool))
+    .filter(y => !isNaN(y) && y >= 2000 && y <= 2100)
+    .sort((a, b) => b - a)
+    .map(String);
+};
+
+window.ucuGetGlobalDefaultYear = () => {
+  // The primary active reporting year — must match the latest year with published SDG data.
+  // Do NOT derive from sorted pool (which may include stale future years from localStorage).
+  return '2025';
+};
+
+// Global Helper to preserve active year query param across all in-page inter-SDG navigation links
+window.ucuUpdatePageYearLinks = (year) => {
+  if (!year) return;
+  document.querySelectorAll('a[href*="sdg"]').forEach(a => {
+    const href = a.getAttribute('href');
+    if (!href) return;
+    // Match sdg1.html, sdg12.html, etc.
+    if (/sdg\d+\.html/i.test(href)) {
+      const cleanHref = href.split('?')[0];
+      a.setAttribute('href', `${cleanHref}?year=${year}`);
+    }
+  });
+};
+
+// Global Multi-Year Deep Linking & Hydration Switcher
+window.ucuSwitchYear = async (year) => {
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('year') === year) return;
+
+  const layout = document.querySelector('ucu-sdg-layout');
+  if (!layout) return;
+
+  const container = layout.querySelector('#ucu-dynamic-content');
+  if (container) {
+    container.style.opacity = '0';
+    container.style.transform = 'translateY(15px)';
+  }
+  
+  urlParams.set('year', year);
+  const newUrl = window.location.pathname + '?' + urlParams.toString();
+  window.history.pushState({path: newUrl}, '', newUrl);
+  layout.setAttribute('year', year);
+  layout._liveData = null;
+
+  // Keep all in-page inter-SDG links in sync with newly selected year
+  window.ucuUpdatePageYearLinks(year);
+
+  if (typeof window.ucuHydratePublishedData === 'function') {
+    await window.ucuHydratePublishedData(year);
+  } else if (typeof layout.doRender === 'function') {
+    layout.doRender();
+  }
+
+  if (container) {
+    setTimeout(() => {
+      container.style.opacity = '1';
+      container.style.transform = 'translateY(0)';
+    }, 100);
+  }
+};
+
 class SdgCard extends HTMLElement {
   connectedCallback() {
-    if (!window.ucuSwitchYear) {
-      window.ucuSwitchYear = async (year) => {
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('year') === year) return;
-
-        const layout = document.querySelector('ucu-sdg-layout');
-        if (!layout) return;
-
-        const sdg = layout.getAttribute('sdg') || '1';
-        
-        const container = layout.querySelector('#ucu-dynamic-content');
-        if (container) {
-          container.style.opacity = '0';
-          container.style.transform = 'translateY(15px)';
-        }
-        
-        try {
-          const basePath = layout.getAttribute('base-path') || '../../';
-          const fetchUrl = basePath + 'sdg-reports/' + year + '/sdg' + sdg + '.html';
-          
-          const response = await fetch(fetchUrl);
-          if (!response.ok) throw new Error("Year report not found");
-          
-          const htmlText = await response.text();
-          const parser = new DOMParser();
-          const doc = parser.parseFromString(htmlText, 'text/html');
-          
-          const newLayout = doc.querySelector('ucu-sdg-layout');
-          if (newLayout) {
-            urlParams.set('year', year);
-            const newUrl = window.location.pathname + '?' + urlParams.toString();
-            window.history.pushState({path: newUrl}, '', newUrl);
-
-            layout.innerHTML = newLayout.innerHTML;
-            layout.setAttribute('year', year);
-            layout.connectedCallback();
-          }
-        } catch (e) {
-          console.error("Failed to load year", year, e);
-          alert("Archive for " + year + " is not available yet.");
-          if (container) {
-            container.style.opacity = '1';
-            container.style.transform = 'translateY(0)';
-          }
-        }
-      };
-    }
-
     const num = this.getAttribute("goal-num") || "";
     const title = this.getAttribute("title") || "";
     const subtitle = this.getAttribute("subtitle") || "";
@@ -155,17 +184,30 @@ class SdgSeeAllCard extends HTMLElement {
 }
 
 class UcuSdgPageHero extends HTMLElement {
+  updateWithLiveDraft(data) {
+    if (!data) return;
+    const hero = data.heroHeader || data;
+    if (hero.goalName || hero.eyebrow) this.setAttribute('goal-name', hero.goalName || hero.eyebrow);
+    if (hero.goalTitle || hero.title) this.setAttribute('title', hero.goalTitle || hero.title);
+    if (hero.subtitle) this.setAttribute('subtitle', hero.subtitle);
+    if (hero.themeColor || hero.colorHex) this.setAttribute('hex', hero.themeColor || hero.colorHex);
+    if (hero.heroBackground || hero.heroBgImage) this.setAttribute('bg-image', hero.heroBackground || hero.heroBgImage);
+    if (hero.heroIconImage) this.setAttribute('icon-image', hero.heroIconImage);
+    this.connectedCallback();
+  }
+
   connectedCallback() {
     const colors = window.UCU_SDG_COLORS || {};
     const sdgAttr = this.getAttribute("sdg") || "1";
     const num = parseInt(sdgAttr);
+    const goalName = this.getAttribute("goal-name") || `Sustainable Development Goal ${sdgAttr}`;
     const title = this.getAttribute("title") || "";
     const subtitle = this.getAttribute("subtitle") || "";
     const hex = this.getAttribute("hex") || colors[sdgAttr] || "#E5243B";
     const bgImage = this.getAttribute("bg-image") || "";
     const iconImage = this.getAttribute("icon-image") || "";
 
-    const rightFadeColor = hex + "BF";
+    const rightFadeColor = hex + "D9";
 
     const spectrumHtml = Object.values(colors).map(
       (color) =>
@@ -176,18 +218,19 @@ class UcuSdgPageHero extends HTMLElement {
     let navHtml = "";
     const prevSdg = num > 1 ? num - 1 : null;
     const nextSdg = num < 17 ? num + 1 : null;
+    const activeYear = new URLSearchParams(window.location.search).get('year') || (document.querySelector('ucu-sdg-layout')?.getAttribute('year')) || window.ucuGetGlobalDefaultYear();
 
     if (prevSdg || nextSdg) {
       navHtml = `
         <div class="absolute inset-0 z-40 pointer-events-none">
-          <div class="w-full h-full max-w-[1280px] mx-auto relative px-4 sm:px-6 lg:px-8">
-            <div class="absolute bottom-6 left-4 sm:left-6 lg:left-8 pointer-events-auto flex items-center bg-white/5 border border-white/10 rounded-[2px] hover:bg-white/15 hover:border-white/20 transition-all duration-300">
+          <div class="w-full h-full max-w-[1360px] mx-auto relative px-4 sm:px-6 lg:px-8">
+            <div class="absolute bottom-5 right-4 sm:right-6 lg:right-8 pointer-events-auto flex items-center bg-slate-950/60 border border-white/20 rounded-xl backdrop-blur-md shadow-lg overflow-hidden transition-all duration-300">
               ${
                 prevSdg
                   ? `
-                <a href="sdg${prevSdg}.html" class="flex items-center gap-1.5 px-3 py-1.5 text-white/60 hover:text-white transition-colors ${nextSdg ? 'border-r border-white/10' : ''} no-underline focus:outline-none focus:bg-white/10 group">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 transition-transform group-hover:-translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
-                  <span class="text-[9px] uppercase tracking-[0.2em] font-black">Prev</span>
+                <a href="sdg${prevSdg}.html?year=${activeYear}" class="flex items-center gap-2 px-3.5 py-2 text-white/80 hover:text-white hover:bg-white/10 transition-colors ${nextSdg ? 'border-r border-white/15' : ''} no-underline focus:outline-none group">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
+                  <span class="text-[10px] uppercase tracking-[0.2em] font-extrabold font-sans">SDG ${prevSdg}</span>
                 </a>
               `
                   : ""
@@ -195,9 +238,9 @@ class UcuSdgPageHero extends HTMLElement {
               ${
                 nextSdg
                   ? `
-                <a href="sdg${nextSdg}.html" class="flex items-center gap-1.5 px-3 py-1.5 text-white/60 hover:text-white transition-colors no-underline focus:outline-none focus:bg-white/10 group">
-                  <span class="text-[9px] uppercase tracking-[0.2em] font-black">Next</span>
-                  <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
+                <a href="sdg${nextSdg}.html?year=${activeYear}" class="flex items-center gap-2 px-3.5 py-2 text-white/80 hover:text-white hover:bg-white/10 transition-colors no-underline focus:outline-none group">
+                  <span class="text-[10px] uppercase tracking-[0.2em] font-extrabold font-sans">SDG ${nextSdg}</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
                 </a>
               `
                   : ""
@@ -209,26 +252,31 @@ class UcuSdgPageHero extends HTMLElement {
     }
 
     this.innerHTML = `
-      <header class="relative w-full h-72 md:h-80 xl:h-[450px] overflow-hidden flex items-center bg-ucu-blue-dark">
-        <img src="${bgImage}" alt="SDG ${sdgAttr} Background" class="absolute inset-0 w-full h-full object-cover object-center z-0 scale-105 transform translate-y-[-5%] blur-[2px] opacity-60 mix-blend-overlay" loading="eager" />
-        <div class="absolute inset-0 z-10" style="background: radial-gradient(circle at 30% 50%, rgba(36, 48, 94, 0.95) 0%, rgba(36, 48, 94, 0.75) 60%, ${rightFadeColor} 100%);"></div>
+      <header class="relative w-full min-h-[300px] md:min-h-[340px] xl:min-h-[400px] py-12 md:py-16 overflow-hidden flex items-center bg-ucu-blue-dark">
+        <img src="${bgImage}" alt="SDG ${sdgAttr} Background" class="absolute inset-0 w-full h-full object-cover object-center z-0 scale-105 transform translate-y-[-3%] blur-[2px] opacity-40 mix-blend-overlay" loading="eager" />
+        <div class="absolute inset-0 z-10" style="background: radial-gradient(circle at 20% 50%, rgba(20, 28, 58, 0.96) 0%, rgba(36, 48, 94, 0.85) 60%, ${rightFadeColor} 100%);"></div>
         
-        <div class="relative z-20 w-full max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-start md:items-center gap-6 md:gap-10">
+        <div class="relative z-20 w-full max-w-[1360px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-start md:items-center gap-6 md:gap-10">
           <div class="shrink-0 drop-shadow-2xl">
-            <img src="${iconImage}" alt="SDG ${sdgAttr} Icon" class="w-20 h-20 md:w-32 md:h-32 xl:w-44 xl:h-44 object-contain rounded-xl border border-white/30 p-1 ucu-glass" />
+            <div class="w-24 h-24 md:w-36 md:h-36 xl:w-44 xl:h-44 rounded-2xl md:rounded-3xl p-3 md:p-4 bg-white/10 backdrop-blur-md border border-white/25 shadow-2xl flex items-center justify-center transition-transform duration-500 hover:scale-[1.03]">
+              <img src="${iconImage}" alt="SDG ${sdgAttr} Icon" class="w-full h-full object-contain drop-shadow-md" />
+            </div>
           </div>
           <div class="flex flex-col text-white">
-            <span class="text-[0.6rem] md:text-[0.7rem] font-bold tracking-[0.25em] uppercase text-white/70 mb-2 drop-shadow-md">
-              Sustainable Development Goal ${sdgAttr}
-            </span>
-            <h1 class="text-3xl md:text-5xl xl:text-[4rem] font-black tracking-tighter leading-none mb-3 md:mb-4 drop-shadow-lg" style="text-shadow: 0 4px 12px rgba(0,0,0,0.1);">${title}</h1>
-            <p class="text-sm md:text-base xl:text-lg font-light text-white/95 max-w-[65ch] leading-relaxed drop-shadow-md">${subtitle}</p>
+            <div class="flex items-center gap-2 mb-2.5">
+              <span class="w-2.5 h-2.5 rounded-full shadow-sm" style="background-color: ${hex}; box-shadow: 0 0 10px ${hex};"></span>
+              <span class="text-xs md:text-sm font-extrabold tracking-[0.2em] uppercase text-white/80 font-sans">
+                ${goalName}
+              </span>
+            </div>
+            <h1 class="text-3xl sm:text-4xl md:text-5xl xl:text-6xl font-black tracking-tight leading-tight md:leading-none text-white drop-shadow-lg font-sans mb-3">${title}</h1>
+            <p class="text-sm md:text-base xl:text-lg font-medium text-white/90 max-w-[70ch] leading-relaxed drop-shadow-sm font-sans">${subtitle}</p>
           </div>
         </div>
 
         ${navHtml}
 
-        <div class="absolute bottom-0 left-0 w-full flex h-2 sm:h-2.5 z-30 opacity-90">${spectrumHtml}</div>
+        <div class="absolute bottom-0 left-0 w-full flex h-1.5 sm:h-2 z-30 opacity-95">${spectrumHtml}</div>
       </header>
     `;
   }
@@ -237,27 +285,33 @@ class UcuSdgPageHero extends HTMLElement {
 class UcuSdgRibbon extends HTMLElement {
   connectedCallback() {
     const activeSdg = parseInt(this.getAttribute("active") || "1");
+    const activeYear = new URLSearchParams(window.location.search).get('year') || window.ucuGetGlobalDefaultYear();
     const colors = window.UCU_SDG_COLORS || {};
 
     const boxesHtml = Object.entries(colors).map(([numStr, hex]) => {
       const num = parseInt(numStr);
       const isActive = activeSdg === num;
       const classes = isActive
-        ? "ring-4 ring-ucu-yellow ring-offset-2 ring-offset-slate-50 scale-110 shadow-md z-10"
-        : "hover:scale-105 opacity-80 hover:opacity-100";
+        ? "ring-4 ring-offset-2 ring-offset-slate-50 scale-110 shadow-lg z-10 font-black"
+        : "hover:scale-105 opacity-85 hover:opacity-100 shadow-xs hover:shadow-md";
 
-      return `<a href="sdg${num}.html" class="flex-none w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center rounded-md text-white font-bold text-sm sm:text-base transition-all duration-300 ${classes}" style="background-color: ${hex};">${num}</a>`;
+      return `<a href="sdg${num}.html?year=${activeYear}" class="flex-none w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center rounded-xl text-white font-extrabold text-sm sm:text-base transition-all duration-300 font-sans ${classes}" style="background-color: ${hex}; ${isActive ? `ring-color: ${hex};` : ''}" aria-label="Goal ${num}">${num}</a>`;
     }).join("");
 
     this.innerHTML = `
-      <div class="w-full bg-slate-50 border-t border-gray-200 pt-12 pb-8 relative z-40 shadow-sm mt-10">
-        <div class="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 w-full text-center">
-          <h3 class="text-lg font-bold text-ucu-blue-dark tracking-tight mb-5">Explore More Goals</h3>
-          <div class="flex items-center w-full gap-2.5 lg:gap-0 lg:justify-between overflow-x-auto py-4 px-3 scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <section class="w-full bg-slate-50 border-t border-slate-200/80 pt-12 pb-10 relative z-40 mt-12 font-sans" aria-label="SDG Quick Navigation">
+        <div class="max-w-[1360px] mx-auto px-4 sm:px-6 lg:px-8 w-full text-center">
+          <div class="flex items-center justify-center gap-2 mb-2">
+            <span class="w-1.5 h-1.5 rounded-full bg-ucu-red"></span>
+            <h3 class="text-base md:text-lg font-black text-slate-900 tracking-tight uppercase font-sans">Explore More Goals</h3>
+            <span class="w-1.5 h-1.5 rounded-full bg-ucu-blue-dark"></span>
+          </div>
+          <p class="text-xs text-slate-500 font-medium max-w-md mx-auto mb-6 font-sans">Navigate across all 17 United Nations Sustainable Development Goals active at Urdaneta City University.</p>
+          <div class="flex items-center w-full gap-2.5 sm:gap-3 lg:justify-between overflow-x-auto py-3 px-2 scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             ${boxesHtml}
           </div>
         </div>
-      </div>
+      </section>
     `;
   }
 }
@@ -270,13 +324,8 @@ class UcuSdgLayout extends HTMLElement {
     // Hide component content initially to prevent FOUC (Flash of Unstyled Content)
     this.style.opacity = "0";
     this.style.transition = "opacity 0.25s ease-in-out";
-    this.style.display = "block";
 
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', () => this.startLoading());
-    } else {
-      this.startLoading();
-    }
+    this.startLoading();
   }
 
   startLoading() {
@@ -311,13 +360,26 @@ class UcuSdgLayout extends HTMLElement {
     });
   }
 
+  updateWithLiveDraft(data) {
+    if (!data) return;
+    this._liveData = data;
+    const heroEl = document.querySelector('ucu-sdg-page-hero');
+    if (heroEl && typeof heroEl.updateWithLiveDraft === 'function') {
+      heroEl.updateWithLiveDraft(data.heroHeader || data);
+    }
+    this.doRender();
+  }
+
   doRender() {
     const base = window.ucuGetBasePath ? window.ucuGetBasePath() : './';
-    const narrativeContent = this.querySelector('[slot="description"]')?.innerHTML || "";
+    if (!this._rawSlotHtml) {
+      this._rawSlotHtml = this.querySelector('[slot="description"]')?.innerHTML || "";
+    }
+    const narrativeContent = this._rawSlotHtml;
     const activeSdg = parseInt(this.getAttribute("sdg") || "1");
-    const year = this.getAttribute("year") || "2025";
     const colors = window.UCU_SDG_COLORS || {};
-    const sdgColor = colors[activeSdg] || "#24305e";
+    const heroData = (this._liveData && this._liveData.heroHeader) || this._liveData || {};
+    const sdgColor = heroData.themeColor || heroData.colorHex || colors[activeSdg] || "#24305e";
 
     const allEvents = window.UCU_EVENTS || [];
     const pageEvents = allEvents.filter(ev => ev.relatedSdgs && ev.relatedSdgs.includes(activeSdg));
@@ -325,68 +387,30 @@ class UcuSdgLayout extends HTMLElement {
     const allResearch = window.UCU_RESEARCH || [];
     const pageResearch = allResearch.filter(res => res.sdgs && res.sdgs.includes(activeSdg));
 
+    const availableYears = window.ucuGetGlobalAvailableYears(this.getAttribute("years"));
+    const activeYearStr = new URLSearchParams(window.location.search).get('year') || this.getAttribute("year") || (this._liveData && this._liveData.reportYear) || (this._liveData && this._liveData.year) || availableYears[0] || "2026";
+    const year = activeYearStr;
+
     const navItems = Array.from({ length: 17 }, (_, i) => i + 1)
       .map((num) => {
         const isActive = activeSdg === num;
+        const goalHex = colors[num] || "#24305e";
         const classes = isActive
-          ? "z-10 shadow-[0_0_20px_rgba(36,48,94,0.5)]"
-          : "shadow-sm hover:shadow-md opacity-90 hover:opacity-100";
+          ? "z-10 shadow-md ring-2 scale-[1.02] -translate-y-0.5"
+          : "shadow-2xs hover:shadow-md opacity-90 hover:opacity-100 hover:-translate-y-0.5";
         return `
-        <a href="sdg${num}.html" class="group relative block w-full transition-all duration-300 flex-shrink-0 bg-white rounded-[2px] ${classes}">
-          <img src="${base}images/sdg-nav-banner/sdg${num}.jpg" alt="SDG ${num} Navigation" class="w-full h-auto block rounded-[2px]" loading="${num > 4 ? "lazy" : "eager"}" onerror="this.style.display='none'"/>
-          ${!isActive ? `<div class="absolute inset-0 bg-[#24305e]/15 group-hover:bg-transparent transition-colors duration-300 pointer-events-none rounded-[2px]"></div>` : ""}
+        <a href="sdg${num}.html?year=${activeYearStr}" class="group relative block w-full transition-all duration-300 shrink-0 bg-white rounded-xl overflow-hidden ${classes}" style="${isActive ? `border: 2px solid ${goalHex}; ring-color: ${goalHex};` : 'border: 1px solid #e2e8f0;'}" aria-label="SDG ${num}">
+          <img src="${base}images/sdg-nav-banner/sdg${num}.jpg" alt="SDG ${num} Navigation" class="w-full h-auto block" loading="${num > 4 ? "lazy" : "eager"}" onerror="this.style.display='none'"/>
+          ${!isActive ? `<div class="absolute inset-0 bg-slate-900/10 group-hover:bg-transparent transition-colors duration-300 pointer-events-none"></div>` : `<div class="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full" style="background-color: ${goalHex}; box-shadow: 0 0 8px ${goalHex};"></div>`}
         </a>`;
       })
-      .join("");
-
-    const cardsHtml = pageEvents
-      .map((ev) => {
-        const tagsHtml = ev.relatedSdgs
-          .map(
-            (num) =>
-              `<div class="flex items-center justify-center w-6 h-6 rounded text-white text-[10px] font-black shadow-sm" style="background-color: ${colors[num] || "#24305e"};">${num}</div>`,
-          )
-          .join("");
-          
-        return `
-        <button class="ucu-event-trigger group block relative w-full text-left overflow-hidden rounded-2xl bg-white border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-500 ease-[cubic-bezier(0.25,1,0.5,1)] flex flex-col cursor-pointer" data-event-id="${ev.id}">
-          <span class="absolute bottom-0 left-0 w-full h-[6px] bg-gradient-to-r from-ucu-blue-dark to-ucu-red origin-left scale-x-0 transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-x-100 z-20"></span>
-          <div class="w-full aspect-video overflow-hidden relative bg-slate-100 shrink-0">
-            <img src="${base}${ev.img}" alt="${ev.title}" class="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-[0.8s] ease-[cubic-bezier(0.25,1,0.5,1)]" loading="lazy" onerror="window.ucuHandleImageError(this)" />
-            <div class="absolute top-2.5 right-2.5 bg-ucu-red/85 backdrop-blur-md border border-white/20 text-white text-[8px] font-black px-2 py-1 rounded shadow-sm flex items-center gap-1 uppercase tracking-widest z-10">EVENT</div>
-          </div>
-          <div class="p-4 pb-5 flex flex-col gap-1.5 relative z-10 bg-white flex-grow w-full">
-            <p class="text-[9px] text-ucu-red font-bold uppercase tracking-widest">${ev.date}</p>
-            <h4 class="text-sm font-black text-ucu-blue-dark group-hover:text-ucu-red leading-tight transition-colors duration-300 line-clamp-2">${ev.title}</h4>
-            <p class="text-[11px] text-slate-600 line-clamp-2 leading-relaxed m-0 mb-2">${ev.desc}</p>
-            <div class="mt-auto pt-3 border-t border-slate-100 flex items-center justify-between gap-2 w-full">
-              <span class="text-[8px] font-black text-slate-400 uppercase tracking-widest shrink-0">SDG Alignment</span>
-              <div class="flex flex-wrap gap-1.5 justify-end">${tagsHtml}</div>
-            </div>
-          </div>
-        </button>`;
-      })
-      .join("");
-
-    const modalsHtml = pageEvents
-      .map(
-        (ev) => `
-      <ucu-modal-shell 
-        modal-id="${ev.id}" 
-        title="${ev.title}" 
-        badge="${ev.date}" 
-        content-src="${base}${ev.src}"
-        data-sdgs='${JSON.stringify(ev.relatedSdgs)}'>
-      </ucu-modal-shell>
-    `,
-      )
       .join("");
 
     // Research HTML Content
     const researchHtml = pageResearch.length > 0 
       ? pageResearch.map(res => {
           const keywordPills = res.keywords && res.keywords.length > 0
-            ? res.keywords.map(kw => `<span class="px-2 py-0.5 text-[9px] font-semibold rounded bg-slate-100 text-slate-500 border border-slate-200">${kw}</span>`).join("")
+            ? res.keywords.map(kw => `<span class="px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider rounded-md bg-slate-100 text-slate-600 border border-slate-200/80 font-sans">${kw}</span>`).join("")
             : "";
           
           let resolvedPdfLink = res.pdfLink;
@@ -395,24 +419,28 @@ class UcuSdgLayout extends HTMLElement {
           }
           
           const pdfBtn = resolvedPdfLink && resolvedPdfLink !== "#"
-            ? `<a href="${resolvedPdfLink}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 px-4 py-2 bg-ucu-blue-dark text-white text-[10px] font-bold uppercase tracking-widest rounded hover:bg-ucu-red hover:shadow-md transition-all duration-300 no-underline">
+            ? `<a href="${resolvedPdfLink}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-4 py-2 bg-ucu-blue-dark text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-slate-900 hover:shadow-md transition-all duration-300 no-underline shadow-xs font-sans">
                  <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                 View Research PDF
+                 <span>Access Repository</span>
                </a>`
-            : `<span class="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-100 text-slate-400 text-[10px] font-bold uppercase tracking-widest rounded border border-slate-200 cursor-not-allowed select-none" title="PDF availability pending publication">
+            : `<span class="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-400 text-[10px] font-bold uppercase tracking-widest rounded-xl border border-slate-200 cursor-not-allowed select-none font-sans" title="PDF availability pending publication">
                  <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-                 Access Restricted
+                 <span>Access Restricted</span>
                </span>`;
 
           return `
-            <div class="p-5 md:p-6 rounded-xl border border-slate-200 bg-white hover:border-slate-300 hover:shadow-md transition-all duration-300 flex flex-col gap-3">
-              <div class="flex flex-wrap items-start justify-between gap-2 border-b border-slate-100 pb-2">
-                <h4 class="text-xs md:text-sm font-black text-ucu-blue-dark m-0 leading-snug text-left max-w-[80%]">${res.title}</h4>
-                <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest shrink-0">${res.date}</span>
+            <div class="p-6 md:p-7 rounded-2xl border border-slate-200/80 bg-white hover:border-slate-300 hover:shadow-md transition-all duration-300 flex flex-col gap-3.5 font-sans">
+              <div class="flex flex-wrap items-start justify-between gap-2 border-b border-slate-100 pb-3">
+                <h4 class="text-sm sm:text-base font-black text-slate-900 m-0 leading-snug text-left max-w-[85%] font-sans">${res.title}</h4>
+                <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest shrink-0 bg-slate-100 px-3 py-1 rounded-full border border-slate-200/80 font-sans">${res.date}</span>
               </div>
-              <p class="text-[10px] font-bold text-ucu-red m-0 text-left">Authors: <span class="text-slate-600 font-medium">${res.authors}</span></p>
-              <div class="text-[11px] leading-relaxed text-slate-600 text-left m-0">
-                <strong class="text-slate-700 font-black block mb-1 text-[9px] uppercase tracking-widest">Abstract</strong>
+              <p class="text-xs font-bold text-ucu-red m-0 text-left font-sans flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                <span>Authors:</span>
+                <span class="text-slate-700 font-medium">${res.authors}</span>
+              </p>
+              <div class="text-xs sm:text-sm leading-relaxed text-slate-600 text-left m-0 font-sans">
+                <strong class="text-slate-900 font-extrabold block mb-1 text-[10px] uppercase tracking-widest font-sans">Abstract</strong>
                 ${res.abstract}
               </div>
               <div class="flex flex-wrap gap-1.5 mt-1 items-center">
@@ -424,75 +452,142 @@ class UcuSdgLayout extends HTMLElement {
             </div>
           `;
         }).join('<div class="h-4"></div>')
-      : `<div class="p-8 text-center rounded-xl border border-dashed border-slate-300 bg-slate-50/50 flex flex-col items-center justify-center gap-2">
+      : `<div class="p-8 text-center rounded-2xl border border-dashed border-slate-300 bg-slate-50/50 flex flex-col items-center justify-center gap-2 font-sans">
            <svg class="w-8 h-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
              <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
            </svg>
-           <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">No publications recorded for this goal in 2025 yet</span>
+           <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest font-sans">No publications recorded for this goal in ${year} yet</span>
          </div>`;
 
-    // ── PARSE SLOT DESCRIPTION INTO SUB-ACCORDIONS (GROUPED BY H2) ──
-    const tempDiv = document.createElement("div");
-    tempDiv.innerHTML = narrativeContent;
-
+    // ── PROCESS NARRATIVE & SUB-SECTIONS (DRAWERS) ──
     let introHtml = "";
     const subSections = [];
-    let currentSection = null;
 
-    Array.from(tempDiv.children).forEach((child) => {
-      // Look for H2 element in child (either child is H2 or contains H2)
-      const h2Element = child.tagName === "H2" ? child : child.querySelector("h2");
-      if (h2Element) {
-        currentSection = {
-          title: h2Element.innerText.trim(),
-          content: "",
-          events: []
-        };
-        subSections.push(currentSection);
+    const hasNewSchema = this._liveData && (Array.isArray(this._liveData.impactDrawers) || Array.isArray(this._liveData.narrative));
+    const hasLegacySchema = this._liveData && (Array.isArray(this._liveData.subSections) || Array.isArray(this._liveData.sections));
+
+    if (hasNewSchema || hasLegacySchema) {
+      // 1. Live Data Mode (Structured JSON from CMS / Firestore)
+      
+      // Zone 1: Narrative Blocks or Legacy Metrics/Summary
+      if (hasNewSchema && Array.isArray(this._liveData.narrative) && window.UcuBlockRenderer) {
+        introHtml += window.UcuBlockRenderer.renderBlocks(this._liveData.narrative, base, sdgColor);
       } else {
-        if (currentSection) {
-          currentSection.content += child.outerHTML;
-        } else {
-          introHtml += child.outerHTML;
+        if (Array.isArray(this._liveData.metrics) && this._liveData.metrics.length > 0) {
+          introHtml += `
+            <ucu-metric-cards class="block w-full reveal-on-scroll" style="transition-delay: 100ms;" data-metrics='${JSON.stringify(this._liveData.metrics.map(m => ({
+              value: m.value,
+              label: m.label,
+              theme: m.theme || 'navy',
+              svgIcon: m.svgIcon || `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`
+            })))}'></ucu-metric-cards>
+          `;
+        }
+
+        if (this._liveData.executiveSummary) {
+          introHtml += `
+            <div class="ucu-prose-narrative reveal-on-scroll">
+              <p class="text-base md:text-lg leading-relaxed text-slate-700 font-medium mb-6">
+                ${this._liveData.executiveSummary}
+              </p>
+            </div>
+          `;
         }
       }
-    });
 
-    // ── MATCH EVENTS TO H2 SUB-SECTIONS ──
-    const matchedEventIds = new Set();
-    subSections.forEach(sec => {
-      // Match if the section content mentions the event ID (e.g. kalahi-cidss)
-      const matched = pageEvents.filter(ev => sec.content.toLowerCase().includes(ev.id.toLowerCase()));
-      matched.forEach(ev => {
-        sec.events.push(ev);
-        matchedEventIds.add(ev.id);
+      // Zone 2: Impact Drawers
+      const incomingDrawers = this._liveData.impactDrawers || this._liveData.subSections || this._liveData.sections || [];
+      incomingDrawers.forEach((sec, idx) => {
+        let secContent = '';
+        const blocksList = sec.contents || sec.blocks;
+        if (Array.isArray(blocksList) && blocksList.length > 0 && window.UcuBlockRenderer) {
+          secContent = window.UcuBlockRenderer.renderBlocks(blocksList, base, sdgColor);
+        } else if (Array.isArray(sec.paragraphs)) {
+          secContent = sec.paragraphs.map(p => `<p class="text-base md:text-lg leading-relaxed text-slate-700 font-medium mb-4">${p}</p>`).join('');
+        } else if (typeof sec.content === 'string') {
+          secContent = sec.content;
+        }
+
+        const secEvents = Array.isArray(sec.events) ? sec.events : [];
+        if (sec.eventId) {
+          const ev = pageEvents.find(e => e.id === sec.eventId);
+          if (ev && !secEvents.some(e => e.id === ev.id)) secEvents.push(ev);
+        }
+
+        subSections.push({
+          title: sec.drawerTitle || sec.title || `Initiative ${idx + 1}`,
+          content: secContent,
+          events: secEvents,
+          isOpen: sec.isOpen !== undefined ? sec.isOpen : false
+        });
       });
-    });
+
+    } else {
+      // 2. Static HTML Parsing Mode
+      const tempDiv = document.createElement("div");
+      tempDiv.innerHTML = narrativeContent;
+
+      let currentSection = null;
+
+      Array.from(tempDiv.children).forEach((child) => {
+        const h2Element = child.tagName === "H2" ? child : child.querySelector("h2");
+        if (h2Element) {
+          currentSection = {
+            title: h2Element.innerText.trim(),
+            content: "",
+            events: [],
+            isOpen: false
+          };
+          subSections.push(currentSection);
+        } else {
+          if (currentSection) {
+            currentSection.content += child.outerHTML;
+          } else {
+            introHtml += child.outerHTML;
+          }
+        }
+      });
+
+      // Match linked events by ID mentioned in section content
+      subSections.forEach(sec => {
+        const matched = pageEvents.filter(ev => sec.content.toLowerCase().includes(ev.id.toLowerCase()));
+        matched.forEach(ev => {
+          if (!sec.events.some(e => e.id === ev.id)) {
+            sec.events.push(ev);
+          }
+        });
+      });
+    }
+
+    // Default open the first drawer if none are open
+    if (subSections.length > 0 && !subSections.some(s => s.isOpen)) {
+      subSections[0].isOpen = true;
+    }
 
     let reportBodyHtml = "";
     if (subSections.length > 0) {
-      // Build collapsible drawers for each H2 section
       const subAccordionsHtml = subSections.map((sec, index) => {
-        const isOpen = false; // All sections collapsed on load by default
+        const isOpen = sec.isOpen;
         
-        // Render section events if any are matched
         let sectionEventsHtml = "";
-        if (sec.events.length > 0) {
+        if (sec.events && sec.events.length > 0) {
           const eventCards = sec.events.map(ev => {
-            const tagsHtml = ev.relatedSdgs
+            const tagsHtml = (ev.relatedSdgs || [])
               .map(num => `<div class="flex items-center justify-center w-5 h-5 rounded text-white text-[9px] font-black shadow-sm" style="background-color: ${colors[num] || "#24305e"};">${num}</div>`)
               .join("");
               
+            const imgSrc = window.ucuResolveMediaSrc ? window.ucuResolveMediaSrc(ev.img, base) : (ev.img && (ev.img.startsWith('data:') || ev.img.startsWith('http')) ? ev.img : `${base}${ev.img}`);
+
             return `
-              <button class="ucu-event-trigger group block relative w-full text-left overflow-hidden rounded-xl bg-slate-50 border border-slate-200/80 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col cursor-pointer max-w-[280px]" data-event-id="${ev.id}">
+              <button class="ucu-event-trigger group block relative w-full text-left overflow-hidden rounded-2xl bg-white border border-slate-200/80 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col cursor-pointer max-w-[320px]" data-event-id="${ev.id}">
                 <div class="w-full aspect-video overflow-hidden relative bg-slate-100 shrink-0">
-                  <img src="${base}${ev.img}" alt="${ev.title}" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-[0.6s]" loading="lazy" onerror="window.ucuHandleImageError(this)" />
-                  <div class="absolute top-2 right-2 bg-ucu-red/90 backdrop-blur-md border border-white/10 text-white text-[8px] font-black px-1.5 py-0.5 rounded shadow-sm uppercase tracking-widest">EVENT</div>
+                  <img src="${imgSrc}" alt="${ev.title}" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-[0.6s]" loading="lazy" onerror="window.ucuHandleImageError(this)" />
+                  <div class="absolute top-2.5 right-2.5 bg-ucu-red/90 backdrop-blur-md border border-white/10 text-white text-[8px] font-black px-2 py-0.5 rounded shadow-sm uppercase tracking-widest">EVENT</div>
                 </div>
-                <div class="p-3.5 flex flex-col gap-1 relative bg-white flex-grow w-full">
-                  <p class="text-[8px] text-ucu-red font-bold uppercase tracking-widest">${ev.date}</p>
+                <div class="p-4 flex flex-col gap-1 relative bg-white flex-grow w-full">
+                  <p class="text-[8px] text-ucu-red font-bold uppercase tracking-widest">${ev.date || ''}</p>
                   <h5 class="text-xs font-black text-ucu-blue-dark group-hover:text-ucu-red leading-tight transition-colors duration-200 line-clamp-2">${ev.title}</h5>
-                  <p class="text-[10px] text-slate-500 line-clamp-2 leading-relaxed m-0 mb-2">${ev.desc}</p>
+                  <p class="text-[11px] text-slate-500 line-clamp-2 leading-relaxed m-0 mb-2">${ev.desc || ''}</p>
                   <div class="mt-auto pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2 w-full">
                     <span class="text-[8px] font-black text-slate-400 uppercase tracking-widest shrink-0">SDG Alignment</span>
                     <div class="flex flex-wrap gap-1 justify-end">${tagsHtml}</div>
@@ -503,7 +598,7 @@ class UcuSdgLayout extends HTMLElement {
           }).join("");
 
           sectionEventsHtml = `
-            <div class="mt-6 pt-5 border-t border-slate-100 flex flex-col gap-3">
+            <div class="mt-8 pt-6 border-t border-slate-100 flex flex-col gap-3">
               <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
                 <svg class="w-3.5 h-3.5" style="color: ${sdgColor};" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                 Aligned Community Engagement
@@ -516,18 +611,18 @@ class UcuSdgLayout extends HTMLElement {
         }
 
         return `
-          <div class="border border-slate-200 bg-white rounded-xl overflow-hidden mb-5 shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-300">
+          <div class="border border-slate-200/90 bg-white rounded-2xl overflow-hidden mb-5 shadow-xs hover:shadow-md hover:border-slate-300 transition-all duration-300">
             <button 
               id="sub-header-${index}"
               aria-controls="sub-panel-${index}"
               aria-expanded="${isOpen ? 'true' : 'false'}"
               class="ucu-sub-accordion-header group w-full flex items-center justify-between p-5 md:p-6 text-left font-black text-slate-800 hover:bg-slate-50 transition-all duration-300 cursor-pointer focus:outline-none"
             >
-              <div class="flex items-center gap-4">
-                <div class="w-2 h-2 rounded-full flex-shrink-0" style="background-color: ${sdgColor}; shadow-[0_0_8px_${sdgColor}80];"></div>
+              <div class="flex items-center gap-3.5">
+                <div class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background-color: ${sdgColor}; box-shadow: 0 0 8px ${sdgColor}80;"></div>
                 <span class="text-base md:text-lg font-black tracking-tight text-slate-800 group-hover:text-ucu-blue-dark transition-colors">${sec.title}</span>
               </div>
-              <div class="flex items-center gap-2 text-slate-400 group-hover:text-slate-600 transition-colors bg-white border border-slate-100 rounded-full px-3 py-1.5 shadow-sm">
+              <div class="flex items-center gap-2 text-slate-400 group-hover:text-slate-700 transition-colors bg-white border border-slate-200 rounded-full px-3.5 py-1.5 shadow-2xs">
                 <span class="text-[9px] md:text-[10px] font-bold uppercase tracking-widest ucu-sub-toggle-text">${isOpen ? 'Hide' : 'Explore'}</span>
                 <svg class="ucu-sub-chevron w-4 h-4 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}" style="color: ${sdgColor};" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
@@ -538,11 +633,11 @@ class UcuSdgLayout extends HTMLElement {
               id="sub-panel-${index}" 
               role="region"
               aria-labelledby="sub-header-${index}"
-              class="p-5 md:p-6 border-t border-slate-100 bg-white ${isOpen ? 'ucu-slide-down' : 'hidden'}"
+              class="p-6 md:p-8 border-t border-slate-100 bg-white ${isOpen ? 'ucu-slide-down' : 'hidden'}"
             >
-              <article class="w-full max-w-[65ch] text-lg leading-relaxed prose prose-lg prose-slate transition-colors">
+              <div class="w-full text-base md:text-lg leading-relaxed text-slate-700 space-y-4">
                 ${sec.content}
-              </article>
+              </div>
               ${sectionEventsHtml}
             </div>
           </div>
@@ -550,42 +645,40 @@ class UcuSdgLayout extends HTMLElement {
       }).join("");
 
       reportBodyHtml = `
-        <div class="flex flex-col gap-4">
+        <div class="flex flex-col gap-6">
           ${introHtml}
-          <div class="mt-4 flex flex-col">
+          <div class="mt-2 flex flex-col">
             ${subAccordionsHtml}
           </div>
         </div>
       `;
     } else {
       reportBodyHtml = `
-        <article class="w-full max-w-[65ch] text-lg leading-relaxed prose prose-lg prose-slate transition-colors">
+        <div class="w-full text-base md:text-lg leading-relaxed text-slate-700">
           ${narrativeContent}
-        </article>
+        </div>
       `;
     }
 
-    const availableYears = (this.getAttribute("years") || "2025,2024,2023").split(",");
-    const activeYearStr = new URLSearchParams(window.location.search).get('year') || year;
-    
     const yearTabsHtmlVertical = availableYears.map(y => `
       <button 
         onclick="window.ucuSwitchYear('${y}')"
-        class="relative flex flex-col items-center justify-center py-4 px-2 rounded-r-xl font-black transition-all duration-300 border border-l-0 cursor-pointer shadow-sm group
-        ${y === activeYearStr ? 'bg-ucu-blue-dark text-white border-transparent shadow-md z-10' : 'bg-slate-100 text-slate-400 border-slate-200 hover:bg-white hover:text-slate-600 hover:translate-x-1'}"
+        class="relative flex flex-col items-center justify-center py-3.5 px-3 rounded-r-xl font-extrabold transition-all duration-300 border border-l-0 cursor-pointer shadow-xs group font-sans
+        ${y === activeYearStr ? 'bg-ucu-blue-dark text-white border-transparent shadow-md z-10 -translate-x-0.5' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:text-slate-900 hover:translate-x-1'}"
+        title="Reporting Year ${y}"
       >
-        <span class="tracking-widest text-sm uppercase">${y}</span>
+        ${y === activeYearStr ? `<div class="absolute left-0 inset-y-1 w-1 rounded-r-full" style="background-color: ${sdgColor};"></div>` : ''}
+        <span class="tracking-wider text-xs uppercase font-extrabold font-sans">${y}</span>
       </button>
     `).join("");
 
     const yearTabsHtmlHorizontal = availableYears.map(y => `
       <button 
         onclick="window.ucuSwitchYear('${y}')"
-        class="flex-1 flex items-center justify-center py-3 px-4 rounded-t-xl font-black transition-all duration-300 border border-b-0 cursor-pointer shadow-sm
-        ${y === activeYearStr ? 'bg-white text-ucu-blue-dark border-slate-200 shadow-md z-10 -translate-y-1' : 'bg-slate-100/50 text-slate-400 border-slate-200/50 hover:bg-white hover:text-slate-600 hover:-translate-y-0.5'}"
+        class="flex-1 flex items-center justify-center py-2.5 px-4 rounded-xl font-extrabold transition-all duration-300 border cursor-pointer font-sans text-xs uppercase tracking-wider
+        ${y === activeYearStr ? 'bg-ucu-blue-dark text-white border-transparent shadow-sm' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-slate-900'}"
       >
-        ${y === activeYearStr ? `<div class="absolute inset-x-0 bottom-0 h-1 bg-[${sdgColor}]" style="background-color: ${sdgColor};"></div>` : ''}
-        <span class="tracking-widest text-sm uppercase">${y}</span>
+        ${y}
       </button>
     `).join("");
 
@@ -606,125 +699,127 @@ class UcuSdgLayout extends HTMLElement {
           transition: background-color 0.2s ease;
         }
         .ucu-accordion-header:hover {
-          background-color: ${sdgColor}12 !important;
+          background-color: ${sdgColor}10 !important;
         }
         .ucu-sub-accordion-header {
           transition: background-color 0.2s ease;
         }
         .ucu-sub-accordion-header:hover {
-          background-color: ${sdgColor}0E !important;
+          background-color: ${sdgColor}0C !important;
         }
       </style>
       
-      <main class="w-full min-h-screen bg-slate-50 font-sans pb-8 xl:pb-12 pt-8 xl:pt-10">
+      <main class="w-full min-h-screen bg-slate-50 font-sans pb-12 xl:pb-16 pt-8 xl:pt-10">
         <div class="max-w-[1360px] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col lg:flex-row gap-6 xl:gap-8 items-start relative">
           
-          <aside class="hidden lg:flex flex-col w-[260px] shrink-0 z-10 transition-all duration-300">
-            <div class="w-full shadow-sm flex-shrink-0 bg-white mb-4 xl:mb-5">
-              <img src="${base}images/sdg-nav-banner/sdg-title.jpg" alt="SDG Reports" class="w-full h-auto block rounded-t-sm" onerror="this.style.display='none'"/>
-            </div>
-            <nav class="flex flex-col gap-3 xl:gap-4 pb-6" aria-label="SDG Navigation">${navItems}</nav>
+          <!-- LEFT SIDE NAVIGATION (18 CARDS) -->
+          <aside class="hidden lg:flex flex-col w-[260px] shrink-0 z-10 transition-all duration-300 sticky top-24">
+            <a href="${base}sdg-reports.html" class="block w-full transition-all duration-300 hover:scale-[1.01] shadow-xs hover:shadow-md rounded-xl overflow-hidden border border-slate-200 mb-4 xl:mb-5">
+              <img src="${base}images/sdg-nav-banner/sdg-title.jpg" alt="SDG Reports Master Dashboard" class="w-full h-auto block" onerror="this.style.display='none'"/>
+            </a>
+            <nav class="flex flex-col gap-3 xl:gap-3.5 pb-6" aria-label="SDG Navigation">${navItems}</nav>
           </aside>
 
-          <!-- Grouping Narrative and Tabs together with gap-0 so they stick -->
+          <!-- MAIN NARRATIVE & TABS CONTAINER -->
           <div class="flex-1 min-w-0 w-full flex items-stretch gap-0 relative">
             
             <section class="flex-1 min-w-0 w-full flex flex-col gap-6" aria-label="Report Content">
             
-            <div class="flex lg:hidden w-full border-b border-slate-200 mt-4">
-               ${yearTabsHtmlHorizontal}
-            </div>
-
-            <div id="ucu-dynamic-content" class="flex flex-col gap-6 transition-all duration-500 ease-out">
-              
-              <!-- ACCORDION 1: SDG REPORT -->
-            <div class="border border-slate-200 bg-white rounded-2xl shadow-sm overflow-hidden transition-all duration-300 hover:shadow-lg">
-              <button 
-                id="header-report"
-                aria-controls="panel-report"
-                aria-expanded="true"
-                class="ucu-accordion-header group w-full flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 md:p-8 text-left font-black text-ucu-blue-dark hover:bg-slate-50 transition-colors duration-300 cursor-pointer focus:outline-none border-l-[6px]"
-                style="border-left-color: ${sdgColor};"
-              >
-                <div class="flex flex-col gap-2">
-                  <div class="flex items-center gap-3">
-                    <span class="text-xl md:text-2xl tracking-tight font-black uppercase text-slate-800 group-hover:text-ucu-blue-dark transition-colors">SDG ${activeSdg} Narrative</span>
-                    <span class="px-3 py-1 text-[10px] md:text-xs font-black rounded-md text-white uppercase tracking-wider shadow-sm" style="background-color: ${sdgColor};">Overview</span>
-                  </div>
-                  <span class="text-xs md:text-sm text-slate-500 font-medium">Comprehensive institutional actions and measurable outcomes for Goal ${activeSdg}.</span>
-                </div>
-                
-                <div class="flex items-center gap-3 bg-white px-4 py-2.5 rounded-full border border-slate-200 shadow-sm group-hover:border-slate-300 group-hover:bg-slate-50 transition-all duration-300 w-fit">
-                  <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest group-hover:text-slate-800 transition-colors ucu-toggle-text">Hide</span>
-                  <div class="w-6 h-6 rounded-full flex items-center justify-center">
-                    <svg class="ucu-chevron-icon w-5 h-5 transition-transform duration-300 rotate-180" style="color: ${sdgColor};" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
-                </div>
-              </button>
-              <div 
-                id="panel-report" 
-                role="region" 
-                aria-labelledby="header-report"
-                class="p-5 md:p-8 border-t border-slate-100 ucu-slide-down"
-              >
-                ${reportBodyHtml}
+              <!-- Mobile/Tablet Horizontal Year Tab Bar -->
+              <div class="flex lg:hidden w-full p-1 bg-slate-100 rounded-xl gap-1 mb-2">
+                 ${yearTabsHtmlHorizontal}
               </div>
-            </div>
 
-            <!-- ACCORDION 2: SDG RESEARCHES -->
-            <div class="border border-slate-200 bg-white rounded-2xl shadow-sm overflow-hidden transition-all duration-300 hover:shadow-lg">
-              <button 
-                id="header-research"
-                aria-controls="panel-research"
-                aria-expanded="false"
-                class="ucu-accordion-header group w-full flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 md:p-8 text-left font-black text-ucu-blue-dark hover:bg-slate-50 transition-colors duration-300 cursor-pointer focus:outline-none border-l-[6px]"
-                style="border-left-color: ${sdgColor};"
-              >
-                <div class="flex flex-col gap-2">
-                  <div class="flex items-center gap-3">
-                    <span class="text-xl md:text-2xl tracking-tight font-black uppercase text-slate-800 group-hover:text-ucu-blue-dark transition-colors">Researches</span>
-                    <span class="px-3 py-1 text-[10px] md:text-xs font-black rounded-md text-white uppercase tracking-wider shadow-sm" style="background-color: ${sdgColor};">Publications [${pageResearch.length}]</span>
-                  </div>
-                  <span class="text-xs md:text-sm text-slate-500 font-medium">Academic publications, case studies, and research initiatives aligned with Goal ${activeSdg}.</span>
-                </div>
+              <div id="ucu-dynamic-content" class="flex flex-col gap-6 transition-all duration-500 ease-out">
                 
-                <div class="flex items-center gap-3 bg-white px-4 py-2.5 rounded-full border border-slate-200 shadow-sm group-hover:border-slate-300 group-hover:bg-slate-50 transition-all duration-300 w-fit">
-                  <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest group-hover:text-slate-800 transition-colors ucu-toggle-text">View</span>
-                  <div class="w-6 h-6 rounded-full flex items-center justify-center">
-                    <svg class="ucu-chevron-icon w-5 h-5 transition-transform duration-300" style="color: ${sdgColor};" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-                    </svg>
+                <!-- ACCORDION 1: SDG REPORT -->
+                <div class="border border-slate-200/90 bg-white rounded-2xl shadow-xs overflow-hidden transition-all duration-300 hover:shadow-md">
+                  <button 
+                    id="header-report"
+                    aria-controls="panel-report"
+                    aria-expanded="true"
+                    class="ucu-accordion-header group w-full flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 md:p-7 text-left font-extrabold text-ucu-blue-dark hover:bg-slate-50 transition-colors duration-300 cursor-pointer focus:outline-none border-l-[6px]"
+                    style="border-left-color: ${sdgColor};"
+                  >
+                    <div class="flex flex-col gap-1.5">
+                      <div class="flex items-center gap-3">
+                        <span class="text-xl md:text-2xl tracking-tight font-black uppercase text-slate-800 group-hover:text-ucu-blue-dark transition-colors font-sans">SDG ${activeSdg} Narrative</span>
+                        <span class="px-2.5 py-0.5 text-[10px] md:text-xs font-black rounded-md text-white uppercase tracking-wider shadow-xs font-sans" style="background-color: ${sdgColor};">Overview</span>
+                      </div>
+                      <span class="text-xs md:text-sm text-slate-500 font-medium font-sans">Comprehensive institutional actions and measurable outcomes for Goal ${activeSdg}.</span>
+                    </div>
+                    
+                    <div class="flex items-center gap-2.5 bg-white px-4 py-2 rounded-full border border-slate-200 shadow-2xs group-hover:border-slate-300 group-hover:bg-slate-50 transition-all duration-300 w-fit shrink-0">
+                      <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest group-hover:text-slate-800 transition-colors ucu-toggle-text font-sans">Hide</span>
+                      <div class="w-5 h-5 rounded-full flex items-center justify-center">
+                        <svg class="ucu-chevron-icon w-4 h-4 transition-transform duration-300 rotate-180" style="color: ${sdgColor};" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                    </div>
+                  </button>
+                  <div 
+                    id="panel-report" 
+                    role="region" 
+                    aria-labelledby="header-report"
+                    class="p-6 md:p-8 border-t border-slate-100 ucu-slide-down"
+                  >
+                    ${reportBodyHtml}
                   </div>
                 </div>
-              </button>
-              <div 
-                id="panel-research" 
-                role="region" 
-                aria-labelledby="header-research"
-                class="p-5 md:p-8 border-t border-slate-100 hidden"
-              >
-                <div class="flex flex-col gap-4">
-                  ${researchHtml}
+
+                <!-- ACCORDION 2: SDG RESEARCHES -->
+                <div class="border border-slate-200/90 bg-white rounded-2xl shadow-xs overflow-hidden transition-all duration-300 hover:shadow-md">
+                  <button 
+                    id="header-research"
+                    aria-controls="panel-research"
+                    aria-expanded="false"
+                    class="ucu-accordion-header group w-full flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 md:p-7 text-left font-extrabold text-ucu-blue-dark hover:bg-slate-50 transition-colors duration-300 cursor-pointer focus:outline-none border-l-[6px]"
+                    style="border-left-color: ${sdgColor};"
+                  >
+                    <div class="flex flex-col gap-1.5">
+                      <div class="flex items-center gap-3">
+                        <span class="text-xl md:text-2xl tracking-tight font-black uppercase text-slate-800 group-hover:text-ucu-blue-dark transition-colors font-sans">Researches</span>
+                        <span class="px-2.5 py-0.5 text-[10px] md:text-xs font-black rounded-md text-white uppercase tracking-wider shadow-xs font-sans" style="background-color: ${sdgColor};">Publications [${pageResearch.length}]</span>
+                      </div>
+                      <span class="text-xs md:text-sm text-slate-500 font-medium font-sans">Academic publications, case studies, and research initiatives aligned with Goal ${activeSdg}.</span>
+                    </div>
+                    
+                    <div class="flex items-center gap-2.5 bg-white px-4 py-2 rounded-full border border-slate-200 shadow-2xs group-hover:border-slate-300 group-hover:bg-slate-50 transition-all duration-300 w-fit shrink-0">
+                      <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest group-hover:text-slate-800 transition-colors ucu-toggle-text font-sans">View</span>
+                      <div class="w-5 h-5 rounded-full flex items-center justify-center">
+                        <svg class="ucu-chevron-icon w-4 h-4 transition-transform duration-300" style="color: ${sdgColor};" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                    </div>
+                  </button>
+                  <div 
+                    id="panel-research" 
+                    role="region" 
+                    aria-labelledby="header-research"
+                    class="p-6 md:p-8 border-t border-slate-100 hidden"
+                  >
+                    <div class="flex flex-col gap-4">
+                      ${researchHtml}
+                    </div>
+                  </div>
                 </div>
+
+              </div> <!-- end #ucu-dynamic-content -->
+            </section>
+
+            <!-- RIGHT BOOKMARK YEAR TABS -->
+            <aside class="hidden lg:block w-16 shrink-0 z-10 sticky top-28 self-start">
+              <div class="flex flex-col gap-1.5 w-full relative">
+                ${yearTabsHtmlVertical}
               </div>
-            </div>
-
-            </div> <!-- end #ucu-dynamic-content -->
-          </section>
-
-          <aside class="hidden lg:block w-20 shrink-0 z-10">
-            <div class="flex flex-col gap-1 w-full relative mt-8">
-              ${yearTabsHtmlVertical}
-            </div>
-          </aside>
-          
+            </aside>
+            
           </div> <!-- end narrative + tabs wrapper -->
 
         </div>
       </main>
-      ${modalsHtml}
     `;
 
     // Accordion Toggle JavaScript
@@ -794,22 +889,27 @@ class UcuSdgLayout extends HTMLElement {
     // Re-initialize scroll reveal observer for newly created DOM nodes
     const localReveals = this.querySelectorAll(".reveal-on-scroll");
     if (localReveals.length > 0) {
-      const localRevealObserver = new IntersectionObserver(
-        (entries, observer) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              entry.target.classList.add("is-visible");
-              observer.unobserve(entry.target);
-            }
-          });
-        },
-        {
-          root: null,
-          rootMargin: "0px 0px -50px 0px",
-          threshold: 0.1,
-        }
-      );
-      localReveals.forEach((el) => localRevealObserver.observe(el));
+      const isIframe = window.self !== window.top || window.location.search.includes('cms_preview=true') || window.location.search.includes('preview=true');
+      if (isIframe) {
+        localReveals.forEach(el => el.classList.add("is-visible"));
+      } else {
+        const localRevealObserver = new IntersectionObserver(
+          (entries, observer) => {
+            entries.forEach((entry) => {
+              if (entry.isIntersecting) {
+                entry.target.classList.add("is-visible");
+                observer.unobserve(entry.target);
+              }
+            });
+          },
+          {
+            root: null,
+            rootMargin: "0px 0px -50px 0px",
+            threshold: 0.1,
+          }
+        );
+        localReveals.forEach((el) => localRevealObserver.observe(el));
+      }
     }
 
     // Inject JSON-LD structured data for AI evaluators and Search Engines
@@ -842,6 +942,11 @@ class UcuSdgLayout extends HTMLElement {
       document.head.appendChild(scriptTag);
     }
     scriptTag.textContent = JSON.stringify(jsonLd);
+
+    // Ensure all page links reflect the active year
+    if (typeof window.ucuUpdatePageYearLinks === 'function') {
+      window.ucuUpdatePageYearLinks(activeYearStr);
+    }
 
     // Fade component into view smoothly after DOM is updated
     requestAnimationFrame(() => {

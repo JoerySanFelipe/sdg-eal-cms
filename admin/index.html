@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-900">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SDG Studio CMS | Urdaneta City University</title>
+  
+  <link rel="icon" href="../images/favicon.ico" type="image/x-icon">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="./css/admin.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.0.0/css/flag-icons.min.css">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="../js/partners-data.js" defer></script>
+  <script src="../js/rankings-data.js" defer></script>
+  <script src="../js/events-data.js" defer></script>
+</head>
+<body class="h-full font-sans text-slate-800 antialiased overflow-hidden bg-slate-100 flex flex-col">
+
+  <!-- ========================================== -->
+  <!-- 1. AUTHENTICATION GATE (CLEAN WHITE CANVAS) -->
+  <!-- ========================================== -->
+  <div id="auth-gate" class="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-b from-white via-slate-50 to-slate-100/90 p-4 sm:p-6 overflow-y-auto transition-all duration-300">
+    
+    <!-- Clean Minimalist Grid Dot Texture -->
+    <div class="fixed inset-0 pointer-events-none z-0 opacity-40 bg-[radial-gradient(#94a3b8_1px,transparent_1px)] [background-size:24px_24px]"></div>
+
+    <div class="w-full max-w-[420px] bg-white rounded-3xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.08)] border border-slate-200/90 overflow-hidden relative z-10 animate-fadeIn">
+      
+      <!-- Top Decorative SDG Multi-Color Spectrum Stripe -->
+      <div class="h-1.5 w-full bg-gradient-to-r from-ucu-blue via-ucu-red to-ucu-yellow"></div>
+      
+      <div class="p-8 sm:p-10 space-y-6">
+        
+        <!-- Header & Brand Visual Identity -->
+        <div class="text-center space-y-3">
+          <div class="inline-flex items-center justify-center p-3 rounded-2xl bg-ucu-blue-dark shadow-md text-white ring-4 ring-slate-100/80 mb-1">
+            <div class="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center font-black text-lg tracking-tighter border border-white/20">
+              UCU
+            </div>
+          </div>
+          
+          <div>
+            <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-slate-100 text-[10px] font-black uppercase tracking-wider text-slate-700 mb-1.5">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+              <span>Official SDG CMS Studio</span>
+            </div>
+            <h1 class="text-2xl font-black text-slate-900 tracking-tight leading-tight">Welcome Back</h1>
+            <p class="text-xs text-slate-500 font-medium leading-relaxed mt-1">
+              External Affairs and Linkages &bull; Urdaneta City University
+            </p>
+          </div>
+        </div>
+
+        <!-- Error Alert Box -->
+        <div id="login-error-box" class="hidden p-3.5 bg-red-50 border border-red-200 rounded-2xl text-xs font-semibold text-red-700 space-y-1 animate-fadeIn">
+          <div class="flex items-center gap-2">
+            <svg class="w-4 h-4 text-red-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg>
+            <span id="login-error-text">Authentication failed.</span>
+          </div>
+        </div>
+
+        <!-- Login Form -->
+        <form id="login-form" class="space-y-4">
+          <div class="space-y-1.5">
+            <label class="block text-xs font-bold text-slate-700">Admin Email Address</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"/></svg>
+              </span>
+              <input type="email" id="login-email" required placeholder="admin.eal@ucu.edu.ph" class="w-full pl-10 pr-4 py-2.5 text-xs font-medium bg-white hover:border-slate-300 focus:bg-white border border-slate-200 rounded-xl focus:ring-4 focus:ring-ucu-blue/10 focus:border-ucu-blue text-slate-900 transition-all outline-none">
+            </div>
+          </div>
+
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between">
+              <label class="block text-xs font-bold text-slate-700">Password</label>
+            </div>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+              </span>
+              <input type="password" id="login-password" required placeholder="••••••••••••" class="w-full pl-10 pr-10 py-2.5 text-xs font-medium bg-white hover:border-slate-300 focus:bg-white border border-slate-200 rounded-xl focus:ring-4 focus:ring-ucu-blue/10 focus:border-ucu-blue text-slate-900 transition-all outline-none">
+              <button type="button" id="btn-toggle-pwd" class="absolute right-2.5 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors text-xs cursor-pointer" title="Show/Hide Password">
+                👁️
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" id="btn-login-submit" class="w-full py-3.5 px-4 bg-ucu-blue-dark hover:bg-slate-900 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center gap-2 cursor-pointer mt-2">
+            <span id="btn-login-label">Sign In to Studio</span>
+            <span id="btn-login-spinner" class="hidden w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+          </button>
+        </form>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- 2. SPLIT-SCREEN STUDIO APPLICATION         -->
+  <!-- ========================================== -->
+  <div id="studio-app" class="hidden h-full flex flex-col overflow-hidden">
+    
+    <!-- TOP APPLICATION BAR (Clean SaaS Header) -->
+    <header class="h-16 bg-white text-slate-800 flex items-center justify-between px-4 sm:px-6 border-b border-slate-200/90 z-30 flex-shrink-0 shadow-2xs">
+      
+      <!-- Left: Title & Single Pulse Badge -->
+      <div class="flex items-center gap-4">
+        <div>
+          <h1 class="text-sm font-black tracking-tight text-slate-900 leading-tight">EAL Website</h1>
+          <div class="text-[10px] text-slate-400 font-medium">Urdaneta City University</div>
+        </div>
+
+        <div class="h-5 w-px bg-slate-200 hidden sm:block"></div>
+
+        <!-- Single Unified "Editing : Name ng Page" Badge with Pulse Effect -->
+        <div class="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-100/90 border border-slate-200 text-xs font-semibold text-slate-700 shadow-2xs">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
+          <span class="text-slate-400 font-normal">Editing :</span>
+          <strong id="breadcrumb-target" class="font-bold text-slate-900">Homepage</strong>
+          <span id="dirty-badge" class="hidden ml-1 px-2 py-0.2 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300 animate-pulse">● Unsaved</span>
+        </div>
+      </div>
+
+      <!-- Right Controls & Actions -->
+      <div class="flex items-center gap-2 sm:gap-3">
+        
+        <!-- Discard Action (Red Button) -->
+        <button type="button" id="btn-revert-draft" class="hidden sm:inline-flex px-3.5 py-2 text-xs font-bold rounded-xl text-red-600 hover:bg-red-50 border border-red-200 transition-colors cursor-pointer">
+          Discard
+        </button>
+
+        <!-- Publish Action (Solid Navy Blue Button) -->
+        <button type="button" id="btn-publish-cloud" class="px-5 py-2 bg-ucu-blue-dark hover:bg-slate-900 text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-2 cursor-pointer">
+          <svg id="publish-btn-icon" class="w-3.5 h-3.5 text-white shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+          <span id="publish-btn-text">Publish</span>
+          <span id="publish-btn-spinner" class="hidden w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+        </button>
+
+        <!-- User Profile Avatar & Sign Out -->
+        <div class="flex items-center gap-2 pl-2 border-l border-slate-200">
+          <div id="user-email-badge" class="hidden xl:block text-right">
+            <div class="text-[11px] font-bold text-slate-800 truncate max-w-[140px]" id="user-display-email">admin@ucu.edu.ph</div>
+            <div class="text-[9px] text-slate-400 font-medium">Administrator</div>
+          </div>
+          <button type="button" id="btn-logout" class="p-2 text-slate-500 hover:text-red-600 bg-slate-50 hover:bg-red-50 border border-slate-200 rounded-xl transition-colors cursor-pointer" title="Sign Out">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          </button>
+        </div>
+
+      </div>
+    </header>
+
+    <!-- SPLIT SCREEN MAIN CONTAINER -->
+    <div class="studio-split-container flex-1">
+      
+      <!-- LEFT SIDEBAR: NAVIGATION -->
+      <aside class="w-64 md:w-72 bg-slate-50/70 border-r border-slate-200/90 flex flex-col h-full flex-shrink-0 z-20 select-none">
+        
+        <!-- Sidebar Search Filter Bar -->
+        <div class="p-3.5 pb-2 border-b border-slate-200/70 bg-white/50">
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            </span>
+            <input 
+              type="text" 
+              id="sidebar-quick-search" 
+              placeholder="Search pages or SDGs..." 
+              autocomplete="off"
+              class="w-full pl-8 pr-3 py-1.5 text-xs font-medium bg-white hover:border-slate-300 focus:bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-ucu-blue/15 focus:border-ucu-blue text-slate-800 placeholder-slate-400 outline-none shadow-2xs transition-all"
+            >
+          </div>
+        </div>
+
+        <nav class="flex-1 overflow-y-auto cms-scrollbar p-3 space-y-4 text-xs font-semibold" id="sidebar-nav-container">
+          
+          <!-- 1. Header Pages (Collapsible Drawer) -->
+          <div class="nav-section-group space-y-1" data-nav-group="public">
+            <button type="button" data-drawer-toggle="public" class="w-full flex items-center justify-between px-2 py-1.5 text-[10px] font-black uppercase tracking-wider text-slate-500 hover:text-slate-900 transition-colors cursor-pointer select-none">
+              <div class="flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5 transform transition-transform duration-200" id="drawer-chevron-public" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                <span>Header Pages</span>
+              </div>
+              <span class="px-1.5 py-0.2 rounded-md bg-slate-200/80 text-slate-600 font-mono text-[9px] font-bold">8</span>
+            </button>
+            <div class="space-y-0.5" id="drawer-public-content">
+              <!-- Home -->
+              <button type="button" data-nav-type="home" class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all text-left group">
+                <svg class="w-4 h-4 text-slate-500 shrink-0 group-hover:text-ucu-blue transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                <span class="font-medium truncate">Home</span>
+              </button>
+              <!-- Announcement -->
+              <button type="button" data-nav-type="announcement" class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all text-left group">
+                <svg class="w-4 h-4 text-slate-500 shrink-0 group-hover:text-ucu-blue transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/></svg>
+                <span class="font-medium truncate">Announcement</span>
+              </button>
+              <!-- SDG Reports -->
+              <button type="button" data-nav-type="sdg_dashboard" data-nav-id="2025" class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all text-left group">
+                <svg class="w-4 h-4 text-slate-500 shrink-0 group-hover:text-ucu-blue transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                <span class="font-medium truncate">SDG Reports</span>
+              </button>
+              <!-- Research -->
+              <button type="button" data-nav-type="research" data-nav-id="2025" class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all text-left group">
+                <svg class="w-4 h-4 text-slate-500 shrink-0 group-hover:text-ucu-blue transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                <span class="font-medium truncate">Research</span>
+              </button>
+              <!-- Impact & Events -->
+              <button type="button" data-nav-type="impact" data-nav-id="2025" class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all text-left group">
+                <svg class="w-4 h-4 text-slate-500 shrink-0 group-hover:text-ucu-blue transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                <span class="font-medium truncate">Impact &amp; Events</span>
+              </button>
+              <!-- Rankings -->
+              <button type="button" data-nav-type="rankings" class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all text-left group">
+                <svg class="w-4 h-4 text-slate-500 shrink-0 group-hover:text-ucu-blue transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>
+                <span class="font-medium truncate">Rankings</span>
+              </button>
+              <!-- Partnerships -->
+              <button type="button" data-nav-type="partnership" class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all text-left group">
+                <svg class="w-4 h-4 text-slate-500 shrink-0 group-hover:text-ucu-blue transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                <span class="font-medium truncate">Partnerships</span>
+              </button>
+              <!-- Smart Eco Campus -->
+              <button type="button" data-nav-type="smarteco" class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all text-left group">
+                <svg class="w-4 h-4 text-slate-500 shrink-0 group-hover:text-ucu-blue transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <span class="font-medium truncate">Smart Eco Campus</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 2. SDG Narratives (3x6 Grid Box Icons with Numbers Only) -->
+          <div class="nav-section-group space-y-2 pt-2 border-t border-slate-200/80" data-nav-group="sdg">
+            <div class="flex items-center justify-between px-2 text-[10px] font-black uppercase tracking-wider text-slate-500">
+              <span>SDG Narratives</span>
+              <span class="px-1.5 py-0.2 rounded-md bg-blue-100 text-ucu-blue-dark font-mono text-[9px] font-bold">17</span>
+            </div>
+            <div class="grid grid-cols-3 gap-1.5" id="sdg-nav-list">
+              <!-- Dynamically populated 3x6 Grid via JS -->
+            </div>
+          </div>
+
+          <!-- 3. UI GreenMetric Pillars (Collapsible Drawer) -->
+          <div class="nav-section-group space-y-1 pt-2 border-t border-slate-200/80" data-nav-group="indicators">
+            <button type="button" data-drawer-toggle="indicators" class="w-full flex items-center justify-between px-2 py-1.5 text-[10px] font-black uppercase tracking-wider text-slate-500 hover:text-slate-900 transition-colors cursor-pointer select-none">
+              <div class="flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5 transform transition-transform duration-200" id="drawer-chevron-indicators" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                <span>UI Green Metric</span>
+              </div>
+              <span class="px-1.5 py-0.2 rounded-md bg-emerald-100 text-emerald-800 font-mono text-[9px] font-bold">7</span>
+            </button>
+            <div class="space-y-1" id="drawer-indicators-content">
+              <div class="space-y-1" id="indicators-nav-list">
+                <!-- Dynamically populated via JS -->
+              </div>
+            </div>
+          </div>
+
+          <!-- 4. Firebase Cloud Settings -->
+          <div class="pt-2 border-t border-slate-200/80">
+            <button type="button" data-nav-type="settings" class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all text-left group">
+              <svg class="w-4 h-4 text-slate-500 shrink-0 group-hover:text-ucu-blue transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+              <span class="font-medium truncate">Firebase Cloud Settings</span>
+            </button>
+          </div>
+
+        </nav>
+      </aside>
+
+      <!-- CENTER PANEL: DYNAMIC FORM EDITOR -->
+      <main class="studio-editor-panel cms-scrollbar">
+        <div id="cms-form-container">
+          <!-- Form generated dynamically by cms-forms.js -->
+        </div>
+      </main>
+
+      <!-- RIGHT PANEL: LIVE SPLIT-SCREEN PREVIEW FRAME -->
+      <section id="preview-panel" class="studio-preview-panel">
+        
+        <!-- Clean Preview Controls Bar -->
+        <div class="h-10 bg-white px-4 flex items-center justify-between border-b border-slate-200/90 text-[11px] text-slate-500 shrink-0">
+          <div class="flex items-center gap-2 min-w-0">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 live-pulse shrink-0"></span>
+            <span class="font-bold text-slate-700 shrink-0">Changes Preview</span>
+          </div>
+
+          <!-- Viewport Mode Switchers & Utility Icons -->
+          <div class="flex items-center gap-1.5 shrink-0">
+            <div class="flex items-center bg-slate-100 rounded-lg p-0.5 border border-slate-200/80">
+              <button type="button" data-device-mode="desktop" class="p-1.5 rounded-md text-slate-800 bg-white shadow-2xs border border-slate-200/80 transition-all font-bold cursor-pointer" title="Desktop View (100%)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+              </button>
+              <button type="button" data-device-mode="tablet" class="p-1.5 rounded-md text-slate-400 hover:text-slate-700 transition-all cursor-pointer" title="Tablet View (768px)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+              </button>
+              <button type="button" data-device-mode="mobile" class="p-1.5 rounded-md text-slate-400 hover:text-slate-700 transition-all cursor-pointer" title="Mobile View (390px)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+              </button>
+            </div>
+
+            <span id="preview-dimensions-pill" class="hidden md:inline-block font-mono text-[10px] bg-slate-50 border border-slate-200/80 px-2 py-0.5 rounded text-slate-500">Desktop 100%</span>
+
+            <button type="button" id="btn-refresh-preview" class="p-1.5 text-slate-400 hover:text-slate-700 bg-slate-50 hover:bg-slate-100 rounded-lg border border-slate-200/80 transition-colors cursor-pointer" title="Refresh Live Preview">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+            </button>
+
+            <button type="button" id="btn-open-external" class="p-1.5 text-slate-400 hover:text-slate-700 bg-slate-50 hover:bg-slate-100 rounded-lg border border-slate-200/80 transition-colors cursor-pointer" title="Open Preview in New Tab">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            </button>
+
+            <!-- Toggle Preview Panel Visibility -->
+            <button type="button" id="btn-toggle-preview" class="p-1.5 text-slate-400 hover:text-slate-700 bg-slate-50 hover:bg-slate-100 rounded-lg border border-slate-200/80 transition-colors cursor-pointer" title="Hide Preview Panel">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Interactive Canvas -->
+        <div class="preview-canvas-wrapper">
+          <div id="device-frame" class="device-frame-desktop">
+            <iframe id="preview-iframe" class="preview-iframe" src="../index.html?cms_preview=true"></iframe>
+          </div>
+        </div>
+      </section>
+
+      <!-- Collapsed Preview Toggle Tab (visible when preview is hidden) -->
+      <button type="button" id="btn-show-preview" class="hidden items-center justify-center w-10 bg-white border-l border-slate-200/90 text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-colors cursor-pointer flex-shrink-0" title="Show Preview Panel">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+
+    </div>
+  </div>
+
+  <!-- Reusable Confirmation Dialog Modal -->
+  <div id="cms-confirm-modal" class="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md opacity-0 pointer-events-none transition-all duration-200">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl transform scale-95 transition-all duration-200" id="cms-confirm-box">
+      <div class="flex items-start gap-4">
+        <div id="confirm-modal-icon-bg" class="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0 bg-red-500/20 text-red-400">
+          <span id="confirm-modal-icon">⚠️</span>
+        </div>
+        <div class="flex-1 min-w-0">
+          <h3 id="confirm-modal-title" class="text-base font-bold text-white mb-1">Confirm Action</h3>
+          <p id="confirm-modal-description" class="text-xs text-slate-300 leading-relaxed mb-6">Are you sure you want to proceed with this action?</p>
+        </div>
+      </div>
+      <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
+        <button type="button" id="confirm-modal-btn-cancel" class="px-4 py-2 text-xs font-semibold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors cursor-pointer">
+          Cancel
+        </button>
+        <button type="button" id="confirm-modal-btn-confirm" class="px-5 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-500 rounded-lg transition-colors shadow-lg cursor-pointer">
+          Confirm
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- High-Tech Animated Publishing Status Modal (Dark Theme & Minimalist Stroke Outline Icons) -->
+  <div id="cms-publish-modal" class="fixed inset-0 z-[350] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md opacity-0 pointer-events-none transition-all duration-300">
+    <div id="cms-publish-box" class="bg-slate-900 border border-slate-700/80 rounded-2xl max-w-md w-full p-7 shadow-2xl transform scale-90 transition-all duration-300 text-center relative overflow-hidden">
+
+      <!-- State 1: Publishing in Progress -->
+      <div id="publish-state-loading" class="space-y-4 py-2">
+        <div class="relative w-14 h-14 mx-auto flex items-center justify-center">
+          <div class="absolute inset-0 rounded-full border-2 border-slate-800"></div>
+          <div class="absolute inset-0 rounded-full border-2 border-transparent border-t-ucu-blue border-r-blue-400 animate-spin"></div>
+          <div class="w-10 h-10 rounded-xl bg-slate-800/90 flex items-center justify-center shadow-inner">
+            <svg class="w-5 h-5 text-ucu-blue animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            </svg>
+          </div>
+        </div>
+
+        <div class="space-y-1">
+          <h3 class="text-base md:text-lg font-black text-white tracking-tight font-sans">Publishing Changes...</h3>
+          <p id="publish-loading-desc" class="text-xs text-slate-400 font-medium leading-relaxed font-sans max-w-xs mx-auto">
+            Synchronizing live updates with the Cloud database...
+          </p>
+        </div>
+
+        <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-slate-800/80 border border-slate-700/60 text-[10px] font-bold text-slate-300 font-mono">
+          <span class="w-1.5 h-1.5 rounded-full bg-ucu-blue animate-ping"></span>
+          <span>Deploying live updates...</span>
+        </div>
+      </div>
+
+      <!-- State 2: Published Successfully -->
+      <div id="publish-state-success" class="hidden space-y-4 py-2 animate-fadeIn">
+        <div class="relative w-14 h-14 mx-auto flex items-center justify-center">
+          <div class="w-12 h-12 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-center shadow-lg">
+            <svg class="w-6 h-6 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+        </div>
+
+        <div class="space-y-1">
+          <h3 class="text-base md:text-lg font-black text-white tracking-tight font-sans">Published Successfully!</h3>
+          <p id="publish-success-desc" class="text-xs text-slate-400 font-medium leading-relaxed font-sans max-w-xs mx-auto">
+            Your changes are now live and visible to all website visitors.
+          </p>
+        </div>
+
+        <div class="flex flex-col items-center gap-3 pt-1">
+          <span id="publish-timestamp-badge" class="px-3 py-1 rounded-full bg-emerald-950/60 border border-emerald-500/30 text-[10px] font-bold text-emerald-300 font-mono">
+            ● Live as of just now
+          </span>
+          <button type="button" id="btn-publish-done" class="px-7 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl border border-slate-700 shadow-md cursor-pointer transition-all font-sans">
+            Done
+          </button>
+        </div>
+      </div>
+
+      <!-- State 3: Error -->
+      <div id="publish-state-error" class="hidden space-y-4 py-2 animate-fadeIn">
+        <div class="relative w-14 h-14 mx-auto flex items-center justify-center">
+          <div class="w-12 h-12 rounded-xl bg-red-500/15 border border-red-500/30 text-red-400 flex items-center justify-center shadow-lg">
+            <svg class="w-6 h-6 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+        </div>
+        <div class="space-y-1">
+          <h3 class="text-base md:text-lg font-black text-white tracking-tight font-sans">Publishing Failed</h3>
+          <p id="publish-error-desc" class="text-xs text-red-400 font-medium leading-relaxed font-sans max-w-xs mx-auto">
+            Unable to publish changes to the database.
+          </p>
+        </div>
+        <button type="button" id="btn-publish-error-close" class="px-7 py-2 bg-red-600 hover:bg-red-500 text-white text-xs font-bold rounded-xl shadow-md cursor-pointer transition-all font-sans">
+          Close
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Toast Notification Alert (For Minor Alerts) -->
+  <div id="cms-toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+    <div class="px-5 py-3.5 rounded-xl shadow-2xl bg-slate-900 border border-slate-700 text-white text-xs font-bold flex items-center gap-3">
+      <span id="toast-icon">✅</span>
+      <span id="toast-message">Action successful</span>
+    </div>
+  </div>
+
+  <!-- Main Application Script (ES Module) -->
+  <script type="module">
+    import { initAuth, subscribeAuth, loginWithEmail, loginAsDemo, logout, getCurrentUser } from './js/auth.js';
+    import { cmsState, SDG_METADATA, INDICATOR_PILLARS, getDefaultYear } from './js/cms-state.js';
+    import { CMSForms } from './js/cms-forms.js';
+    import { previewBridge } from './js/preview-bridge.js';
+    import { isFirebaseConfigured, getFirebaseConfig } from './js/firebase-config.js';
+
+    // Elements
+    const authGate = document.getElementById('auth-gate');
+    const studioApp = document.getElementById('studio-app');
+    const loginForm = document.getElementById('login-form');
+    const loginEmail = document.getElementById('login-email');
+    const loginPassword = document.getElementById('login-password');
+    const loginErrorBox = document.getElementById('login-error-box');
+    const loginErrorText = document.getElementById('login-error-text');
+    const btnLoginSubmit = document.getElementById('btn-login-submit');
+    const btnLoginLabel = document.getElementById('btn-login-label');
+    const btnLoginSpinner = document.getElementById('btn-login-spinner');
+    const btnDemoMode = document.getElementById('btn-demo-mode');
+    const btnTogglePwd = document.getElementById('btn-toggle-pwd');
+    const btnLogout = document.getElementById('btn-logout');
+
+    const formContainer = document.getElementById('cms-form-container');
+    const previewIframe = document.getElementById('preview-iframe');
+    const deviceFrame = document.getElementById('device-frame');
+    const btnPublishCloud = document.getElementById('btn-publish-cloud');
+    const publishBtnText = document.getElementById('publish-btn-text');
+    const publishBtnSpinner = document.getElementById('publish-btn-spinner');
+    const btnRevertDraft = document.getElementById('btn-revert-draft');
+    const dirtyBadge = document.getElementById('dirty-badge');
+    const breadcrumbTarget = document.getElementById('breadcrumb-target');
+    const previewDimensionsPill = document.getElementById('preview-dimensions-pill');
+    const cmsEnvBadge = document.getElementById('cms-env-badge');
+    const cmsEnvText = document.getElementById('cms-env-text');
+    const userDisplayEmail = document.getElementById('user-display-email');
+    const sdgNavList = document.getElementById('sdg-nav-list');
+    const indicatorsNavList = document.getElementById('indicators-nav-list');
+
+    // Instantiate CMS Forms Engine & Preview Bridge
+    const cmsForms = new CMSForms(formContainer);
+    window.cmsForms = cmsForms;
+    window.previewBridge = previewBridge;
+    window.cmsState = cmsState;
+    previewBridge.init(previewIframe);
+
+    // Toast helper
+    function showToast(message, icon = "✅", duration = 3000) {
+      const toast = document.getElementById('cms-toast');
+      const msg = document.getElementById('toast-message');
+      const icn = document.getElementById('toast-icon');
+      if (!toast) return;
+      msg.textContent = message;
+      icn.textContent = icon;
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, duration);
+    }
+
+    // Populate Sidebar Navigation Lists
+    function populateSidebar() {
+      // 1. SDG Narratives (3x6 Grid of Interactive White Box Tiles with Dynamic Hover/Active Colors)
+      let sdgHtml = '';
+      for (let i = 1; i <= 17; i++) {
+        const meta = SDG_METADATA[String(i)] || { title: `SDG ${i}`, color: '#394a8a' };
+        sdgHtml += `
+          <button 
+            type="button" 
+            data-nav-type="sdg" 
+            data-nav-id="${i}" 
+            data-sdg-color="${meta.color}"
+            class="sdg-box-btn h-10 flex items-center justify-center rounded-xl bg-white text-slate-800 font-black text-sm border border-slate-200/90 shadow-2xs transition-all duration-200 hover:scale-105 cursor-pointer"
+            title="SDG ${i}: ${meta.title}"
+          >
+            <span>${i}</span>
+          </button>
+        `;
+      }
+      sdgNavList.innerHTML = sdgHtml;
+
+      // 2. UI GreenMetric Indicators
+      let indHtml = '';
+      INDICATOR_PILLARS.forEach(pillar => {
+        indHtml += `
+          <button type="button" data-nav-type="indicator" data-nav-id="${pillar.id}" class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all text-left group">
+            <span class="text-emerald-800 bg-emerald-100 border border-emerald-200 font-mono text-[10px] font-black px-1.5 py-0.2 rounded shrink-0">#${pillar.num}</span>
+            <span class="truncate font-medium text-xs">${pillar.title}</span>
+          </button>
+        `;
+      });
+      indicatorsNavList.innerHTML = indHtml;
+    }
+
+    // Update Breadcrumbs & Active Nav Styles
+    function updateActiveNavUI() {
+      const { type, id, year } = cmsState.activeSection;
+
+      // Update nav button highlighting
+      document.querySelectorAll('[data-nav-type]').forEach(btn => {
+        const bType = btn.getAttribute('data-nav-type');
+        const bId = btn.getAttribute('data-nav-id') || '';
+        const isSdg = bType === 'sdg';
+        const isActive = bType === type && (!isSdg && bType !== 'indicator' || bId === id);
+
+        if (isSdg) {
+          const color = btn.getAttribute('data-sdg-color') || '#394a8a';
+          if (isActive) {
+            btn.style.backgroundColor = color;
+            btn.style.borderColor = color;
+            btn.style.color = '#ffffff';
+            btn.className = 'sdg-box-btn h-10 flex items-center justify-center rounded-xl text-white font-black text-sm shadow-md ring-3 ring-slate-900/30 scale-105 cursor-pointer transition-all duration-200';
+          } else {
+            btn.style.backgroundColor = '';
+            btn.style.borderColor = '';
+            btn.style.color = '';
+            btn.className = 'sdg-box-btn h-10 flex items-center justify-center rounded-xl bg-white text-slate-800 font-black text-sm border border-slate-200/90 shadow-2xs transition-all duration-200 hover:scale-105 cursor-pointer';
+          }
+        } else {
+          if (isActive) {
+            btn.className = 'w-full flex items-center gap-2.5 px-3 py-2 rounded-xl bg-white text-slate-900 font-bold shadow-xs border border-slate-200/90 text-left transition-all';
+          } else {
+            btn.className = 'w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 transition-all text-left group';
+          }
+        }
+      });
+
+      // Update breadcrumb
+      if (type === 'sdg') {
+        const meta = SDG_METADATA[id] || { title: `SDG ${id}` };
+        breadcrumbTarget.textContent = `SDG ${id}: ${meta.title} (${year})`;
+      } else if (type === 'home') {
+        breadcrumbTarget.textContent = `Home`;
+      } else if (type === 'announcement') {
+        breadcrumbTarget.textContent = `Announcement`;
+      } else if (type === 'sdg_dashboard') {
+        breadcrumbTarget.textContent = `SDG Reports`;
+      } else if (type === 'research') {
+        breadcrumbTarget.textContent = `Research`;
+      } else if (type === 'impact') {
+        breadcrumbTarget.textContent = `Impact & Events (${year})`;
+      } else if (type === 'rankings') {
+        breadcrumbTarget.textContent = `Rankings`;
+      } else if (type === 'partnership') {
+        breadcrumbTarget.textContent = `Partnerships`;
+      } else if (type === 'smarteco') {
+        breadcrumbTarget.textContent = `Smart Eco Campus`;
+      } else if (type === 'indicator') {
+        const pillar = INDICATOR_PILLARS.find(p => p.id === id) || { title: id };
+        breadcrumbTarget.textContent = `UI GreenMetric: ${pillar.title}`;
+      } else if (type === 'settings') {
+        breadcrumbTarget.textContent = `Firebase Cloud Settings`;
+      }
+
+      // Update Dirty State Indicator
+      if (cmsState.isDirty) {
+        dirtyBadge.classList.remove('hidden');
+      } else {
+        dirtyBadge.classList.add('hidden');
+      }
+
+      // (URL display removed from UI)
+    }
+
+    // Main Navigation Handler
+    async function navigateToSection(type, id = '', year = cmsState.activeSection.year || '2025', syncIframe = true) {
+      if (cmsState.isDirty) {
+        const confirmed = await window.cmsConfirm({
+          title: "Unsaved Changes Detected",
+          description: "You have unsaved edits on this section. If you leave now, your local modifications will be discarded. Do you wish to continue?",
+          icon: "⚠️",
+          iconBg: "bg-amber-500/20 text-amber-500",
+          confirmText: "Discard & Switch Section",
+          confirmClass: "bg-amber-600 hover:bg-amber-700 text-white font-bold"
+        });
+        if (!confirmed) return;
+      }
+
+      cmsState.setActiveSection(type, id, year);
+      await cmsState.loadActiveSectionData();
+      cmsForms.render();
+      if (syncIframe) {
+        previewBridge.syncLocationToSection(cmsState.activeSection);
+      }
+      updateActiveNavUI();
+    }
+    window.cmsNavigateToSection = navigateToSection;
+
+    // Handle Authentication State Changes
+    subscribeAuth((user) => {
+      if (user) {
+        authGate.classList.add('hidden');
+        studioApp.classList.remove('hidden');
+        if (userDisplayEmail) userDisplayEmail.textContent = user.email;
+
+        const isLive = isFirebaseConfigured() && !user.isDemo;
+        if (cmsEnvBadge && cmsEnvText) {
+          if (isLive) {
+            cmsEnvBadge.className = "px-2.5 py-1 rounded-full text-[10px] font-bold flex items-center gap-1.5 bg-emerald-950 text-emerald-400 border border-emerald-800/50";
+            cmsEnvText.textContent = "Firestore Live";
+          } else {
+            cmsEnvBadge.className = "px-2.5 py-1 rounded-full text-[10px] font-bold flex items-center gap-1.5 bg-amber-950 text-amber-400 border border-amber-800/50";
+            cmsEnvText.textContent = "Local Demo Mode";
+          }
+        }
+
+        populateSidebar();
+        navigateToSection('home');
+      } else {
+        authGate.classList.remove('hidden');
+        studioApp.classList.add('hidden');
+      }
+    });
+
+    // State changes subscriber
+    cmsState.subscribe(() => {
+      updateActiveNavUI();
+    });
+
+    // Login Form Submit
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      loginErrorBox.classList.add('hidden');
+      btnLoginLabel.classList.add('hidden');
+      btnLoginSpinner.classList.remove('hidden');
+      btnLoginSubmit.disabled = true;
+
+      try {
+        await loginWithEmail(loginEmail.value, loginPassword.value);
+        showToast("Signed in successfully!");
+      } catch (err) {
+        loginErrorBox.classList.remove('hidden');
+        loginErrorText.textContent = err.message || "Failed to authenticate.";
+      } finally {
+        btnLoginLabel.classList.remove('hidden');
+        btnLoginSpinner.classList.add('hidden');
+        btnLoginSubmit.disabled = false;
+      }
+    });
+
+    // Toggle Password Visibility
+    btnTogglePwd.addEventListener('click', () => {
+      loginPassword.type = loginPassword.type === 'password' ? 'text' : 'password';
+    });
+
+    // Demo Mode Button (if available)
+    if (btnDemoMode) {
+      btnDemoMode.addEventListener('click', () => {
+        loginAsDemo();
+        showToast("Entered in Local Demo Mode", "⚡");
+      });
+    }
+
+    // Logout Button with Confirmation Modal
+    btnLogout.addEventListener('click', async () => {
+      const confirmed = typeof window.cmsConfirm === 'function' ? await window.cmsConfirm({
+        title: "Sign Out?",
+        description: "Are you sure you want to sign out of the EAL CMS Studio?",
+        icon: "🚪",
+        iconBg: "bg-red-500/20 text-red-500",
+        confirmText: "Sign Out",
+        confirmClass: "bg-red-600 hover:bg-red-700 text-white font-bold"
+      }) : confirm("Are you sure you want to sign out?");
+
+      if (confirmed) {
+        await logout();
+      }
+    });
+
+    // SDG Box Dynamic Hover Color Handlers
+    document.addEventListener('mouseover', (e) => {
+      const btn = e.target.closest('.sdg-box-btn');
+      if (btn) {
+        const bId = btn.getAttribute('data-nav-id');
+        const { type, id } = cmsState.activeSection;
+        const isActive = type === 'sdg' && String(id) === String(bId);
+        if (!isActive) {
+          const color = btn.getAttribute('data-sdg-color');
+          if (color) {
+            btn.style.backgroundColor = color;
+            btn.style.borderColor = color;
+            btn.style.color = '#ffffff';
+          }
+        }
+      }
+    });
+
+    document.addEventListener('mouseout', (e) => {
+      const btn = e.target.closest('.sdg-box-btn');
+      if (btn) {
+        const bId = btn.getAttribute('data-nav-id');
+        const { type, id } = cmsState.activeSection;
+        const isActive = type === 'sdg' && String(id) === String(bId);
+        if (!isActive) {
+          btn.style.backgroundColor = '';
+          btn.style.borderColor = '';
+          btn.style.color = '';
+        }
+      }
+    });
+
+    // Drawer Accordion Toggles (Event Delegation)
+    document.addEventListener('click', (e) => {
+      const toggleBtn = e.target.closest('[data-drawer-toggle]');
+      if (toggleBtn) {
+        const targetId = toggleBtn.getAttribute('data-drawer-toggle');
+        const contentEl = document.getElementById(`drawer-${targetId}-content`);
+        const chevronEl = document.getElementById(`drawer-chevron-${targetId}`);
+        if (contentEl) {
+          contentEl.classList.toggle('hidden');
+        }
+        if (chevronEl) {
+          chevronEl.classList.toggle('-rotate-90');
+        }
+      }
+    });
+
+    // Sidebar Navigation Click Delegation
+    document.addEventListener('click', (e) => {
+      const navBtn = e.target.closest('[data-nav-type]');
+      if (navBtn) {
+        const type = navBtn.getAttribute('data-nav-type');
+        const id = navBtn.getAttribute('data-nav-id') || '';
+        navigateToSection(type, id, cmsState.activeSection.year || '2025');
+      }
+    });
+
+    // Sidebar Quick Search Filter
+    const sidebarSearchInput = document.getElementById('sidebar-quick-search');
+    if (sidebarSearchInput) {
+      sidebarSearchInput.addEventListener('input', (e) => {
+        const query = e.target.value.toLowerCase().trim();
+        const navButtons = document.querySelectorAll('#sidebar-nav-container [data-nav-type]');
+        navButtons.forEach(btn => {
+          const text = btn.textContent.toLowerCase();
+          if (!query || text.includes(query)) {
+            btn.classList.remove('hidden');
+          } else {
+            btn.classList.add('hidden');
+          }
+        });
+      });
+    }
+
+    // Device Viewport Switchers (Split-Screen Bar)
+    document.querySelectorAll('[data-device-mode]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const mode = btn.getAttribute('data-device-mode');
+        document.querySelectorAll('[data-device-mode]').forEach(b => {
+          b.className = 'p-1.5 rounded-md text-slate-400 hover:text-slate-700 transition-all cursor-pointer';
+        });
+        btn.className = 'p-1.5 rounded-md text-slate-800 bg-white shadow-2xs border border-slate-200/80 transition-all font-bold cursor-pointer';
+
+        previewBridge.setDeviceMode(mode, deviceFrame);
+        previewDimensionsPill.textContent = mode === 'tablet' ? 'Tablet 768px' : mode === 'mobile' ? 'Mobile 390px' : 'Desktop 100%';
+      });
+    });
+
+    // Toggle Preview Panel Visibility
+    const previewPanel = document.getElementById('preview-panel');
+    const btnTogglePreview = document.getElementById('btn-toggle-preview');
+    const btnShowPreview = document.getElementById('btn-show-preview');
+    const editorPanel = document.querySelector('.studio-editor-panel');
+
+    if (btnTogglePreview) {
+      btnTogglePreview.addEventListener('click', () => {
+        previewPanel.classList.add('panel-hidden');
+        btnShowPreview.classList.remove('hidden');
+        btnShowPreview.classList.add('flex');
+        editorPanel.classList.add('preview-hidden');
+      });
+    }
+
+    if (btnShowPreview) {
+      btnShowPreview.addEventListener('click', () => {
+        previewPanel.classList.remove('panel-hidden');
+        btnShowPreview.classList.add('hidden');
+        btnShowPreview.classList.remove('flex');
+        editorPanel.classList.remove('preview-hidden');
+      });
+    }
+
+    // Global Confirmation Dialog Engine
+    let confirmResolve = null;
+    const confirmModal = document.getElementById('cms-confirm-modal');
+    const confirmBox = document.getElementById('cms-confirm-box');
+    const confirmTitle = document.getElementById('confirm-modal-title');
+    const confirmDesc = document.getElementById('confirm-modal-description');
+    const confirmIcon = document.getElementById('confirm-modal-icon');
+    const confirmIconBg = document.getElementById('confirm-modal-icon-bg');
+    const btnConfirmCancel = document.getElementById('confirm-modal-btn-cancel');
+    const btnConfirmAction = document.getElementById('confirm-modal-btn-confirm');
+
+    window.cmsConfirm = function({
+      title = "Confirm Action",
+      description = "Are you sure you want to continue?",
+      icon = "⚠️",
+      iconBg = "bg-red-500/20 text-red-400",
+      confirmText = "Confirm",
+      confirmClass = "bg-red-600 hover:bg-red-500 text-white",
+      cancelText = "Cancel"
+    } = {}) {
+      return new Promise((resolve) => {
+        confirmResolve = resolve;
+        confirmTitle.textContent = title;
+        confirmDesc.textContent = description;
+        
+        // Handle Icon: SVG string, Keyword, or default outline icon
+        if (typeof icon === 'string' && icon.includes('<svg')) {
+          confirmIcon.innerHTML = icon;
+        } else if (icon === 'trash' || icon === 'delete' || icon === '🗑️') {
+          confirmIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>`;
+        } else if (icon === 'warning' || icon === 'alert' || icon === '⚠️') {
+          confirmIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>`;
+        } else if (icon === 'publish' || icon === 'upload' || icon === 'rocket' || icon === '🚀') {
+          confirmIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>`;
+        } else if (icon === 'undo' || icon === 'revert' || icon === 'discard' || icon === '↩️') {
+          confirmIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a5 5 0 015 5v2m-15-7l4-4m-4 4l4 4"/></svg>`;
+        } else {
+          confirmIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`;
+        }
+
+        confirmIconBg.className = `w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0 ${iconBg}`;
+        btnConfirmAction.textContent = confirmText;
+        btnConfirmAction.className = `px-5 py-2 text-xs font-bold rounded-lg transition-all shadow-lg cursor-pointer ${confirmClass}`;
+        btnConfirmCancel.textContent = cancelText;
+
+        confirmModal.classList.remove('opacity-0', 'pointer-events-none');
+        confirmBox.classList.remove('scale-95');
+        confirmBox.classList.add('scale-100');
+      });
+    };
+
+    function closeConfirmModal(result) {
+      confirmModal.classList.add('opacity-0', 'pointer-events-none');
+      confirmBox.classList.remove('scale-100');
+      confirmBox.classList.add('scale-95');
+      if (confirmResolve) {
+        confirmResolve(result);
+        confirmResolve = null;
+      }
+    }
+
+    btnConfirmAction.addEventListener('click', () => closeConfirmModal(true));
+    btnConfirmCancel.addEventListener('click', () => closeConfirmModal(false));
+    confirmModal.addEventListener('click', (e) => {
+      if (e.target === confirmModal) closeConfirmModal(false);
+    });
+
+    // Refresh & Open External
+    document.getElementById('btn-refresh-preview').addEventListener('click', () => {
+      previewBridge.reload();
+      showToast("Refreshed live preview", '<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>');
+    });
+
+    document.getElementById('btn-open-external').addEventListener('click', () => {
+      previewBridge.openInNewTab();
+    });
+
+    // Publish Progress & Status Modal Manager
+    const publishModal = document.getElementById('cms-publish-modal');
+    const publishBox = document.getElementById('cms-publish-box');
+    const publishStateLoading = document.getElementById('publish-state-loading');
+    const publishStateSuccess = document.getElementById('publish-state-success');
+    const publishStateError = document.getElementById('publish-state-error');
+    const publishLoadingDesc = document.getElementById('publish-loading-desc');
+    const publishSuccessDesc = document.getElementById('publish-success-desc');
+    const publishErrorDesc = document.getElementById('publish-error-desc');
+    const publishTimestampBadge = document.getElementById('publish-timestamp-badge');
+    const btnPublishDone = document.getElementById('btn-publish-done');
+    const btnPublishErrorClose = document.getElementById('btn-publish-error-close');
+    let publishAutoDismissTimer = null;
+
+    function openPublishModal(sectionName) {
+      if (publishAutoDismissTimer) clearTimeout(publishAutoDismissTimer);
+      
+      // Reset to loading state
+      publishStateLoading.classList.remove('hidden');
+      publishStateSuccess.classList.add('hidden');
+      publishStateError.classList.add('hidden');
+
+      publishLoadingDesc.textContent = `Synchronizing updates for "${sectionName}" with the live database...`;
+
+      publishModal.classList.remove('opacity-0', 'pointer-events-none');
+      publishBox.classList.remove('scale-90');
+      publishBox.classList.add('scale-100');
+    }
+
+    function showPublishSuccess(sectionName) {
+      publishStateLoading.classList.add('hidden');
+      publishStateSuccess.classList.remove('hidden');
+      publishStateError.classList.add('hidden');
+
+      publishSuccessDesc.textContent = `Your changes for "${sectionName}" are now live and visible to all website visitors.`;
+      const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      publishTimestampBadge.textContent = `● Live as of ${timeStr}`;
+
+      publishAutoDismissTimer = setTimeout(() => {
+        closePublishModal();
+      }, 2000);
+    }
+
+    function showPublishError(errMsg) {
+      if (publishAutoDismissTimer) clearTimeout(publishAutoDismissTimer);
+      publishStateLoading.classList.add('hidden');
+      publishStateSuccess.classList.add('hidden');
+      publishStateError.classList.remove('hidden');
+
+      publishErrorDesc.textContent = errMsg || "An unexpected error occurred while publishing.";
+    }
+
+    function closePublishModal() {
+      if (publishAutoDismissTimer) clearTimeout(publishAutoDismissTimer);
+      publishModal.classList.add('opacity-0', 'pointer-events-none');
+      publishBox.classList.remove('scale-100');
+      publishBox.classList.add('scale-90');
+    }
+
+    if (btnPublishDone) btnPublishDone.addEventListener('click', closePublishModal);
+    if (btnPublishErrorClose) btnPublishErrorClose.addEventListener('click', closePublishModal);
+    publishModal.addEventListener('click', (e) => {
+      if (e.target === publishModal && !publishStateLoading.classList.contains('hidden')) {
+        // Do not dismiss while in progress
+      } else if (e.target === publishModal) {
+        closePublishModal();
+      }
+    });
+
+    // Publish Button (Strictly labeled "Publish")
+    btnPublishCloud.addEventListener('click', async () => {
+      const sectionName = breadcrumbTarget.textContent.trim() || 'active section';
+      const confirmed = await window.cmsConfirm({
+        title: "Publish Changes Live?",
+        description: `Are you ready to publish your changes for "${sectionName}" live to the website? All visitors will immediately see this updated content.`,
+        icon: "publish",
+        iconBg: "bg-emerald-500/15 text-emerald-400 border border-emerald-500/20",
+        confirmText: "Yes, Publish Now",
+        confirmClass: "bg-emerald-600 hover:bg-emerald-500 text-white font-bold"
+      });
+      if (!confirmed) return;
+
+      publishBtnText.textContent = "Publishing...";
+      publishBtnSpinner.classList.remove('hidden');
+      btnPublishCloud.disabled = true;
+
+      // Open High-Tech Animated Publishing Modal
+      openPublishModal(sectionName);
+
+      try {
+        const startTime = Date.now();
+        await cmsState.publishCurrentDraft();
+        
+        // Ensure at least 600ms of loading animation for smooth experience
+        const elapsed = Date.now() - startTime;
+        if (elapsed < 600) {
+          await new Promise(r => setTimeout(r, 600 - elapsed));
+        }
+
+        showPublishSuccess(sectionName);
+        updateActiveNavUI();
+      } catch (err) {
+        showPublishError(err.message || "Failed to publish changes.");
+      } finally {
+        publishBtnText.textContent = "Publish";
+        publishBtnSpinner.classList.add('hidden');
+        btnPublishCloud.disabled = false;
+      }
+    });
+
+    // Revert / Discard Draft Button
+    btnRevertDraft.addEventListener('click', async () => {
+      const confirmed = await window.cmsConfirm({
+        title: "Discard Draft Changes?",
+        description: "Discard all current unsaved edits and restore the most recent published version from the database?",
+        icon: "discard",
+        iconBg: "bg-amber-500/15 text-amber-400 border border-amber-500/20",
+        confirmText: "Discard & Revert",
+        confirmClass: "bg-red-600 hover:bg-red-500 text-white font-bold"
+      });
+      if (!confirmed) return;
+
+      await cmsState.discardDraftToLastPublished();
+      cmsForms.render();
+      previewBridge.sendLiveUpdate(cmsState.currentDraft);
+      showToast("Draft reverted to latest published version.", '<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-amber-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a5 5 0 015 5v2m-15-7l4-4m-4 4l4 4"/></svg>');
+      updateActiveNavUI();
+    });
+
+    // Initialize Auth
+    initAuth();
+  </script>
+</body>
+</html>

@@ -8,60 +8,52 @@
    ========================================================================== */
 
 class UcuHomeHeroSlider extends HTMLElement {
+  static get observedAttributes() {
+    return ["images", "base-path"];
+  }
+
+  attributeChangedCallback(name, oldVal, newVal) {
+    if (oldVal !== newVal && this.hasRendered) {
+      this.hasRendered = false;
+      this.connectedCallback();
+    }
+  }
+
   connectedCallback() {
     this.style.display = "block";
     this.style.width = "100%";
 
-    if (this.hasRendered) return;
     this.hasRendered = true;
 
     const base = this.getAttribute("base-path") || "./";
 
     // Configuration for image slides (lazy loaded async)
-    const imageSlides = [
+    const imagesRaw = this.getAttribute("images");
+    let imageSlides = [
       `${base}images/home-sliders/1.png`,
       `${base}images/home-sliders/2.png`,
       `${base}images/home-sliders/3.png`
     ];
+    
+    if (imagesRaw) {
+      try {
+        const parsed = JSON.parse(imagesRaw);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          imageSlides = parsed;
+        }
+      } catch (e) {
+        console.error("Invalid images JSON for UcuHomeHeroSlider");
+      }
+    }
 
-    // Total slides = 1 (Hardcoded Statement) + Dynamic Images
-    const totalSlides = 1 + imageSlides.length;
+    // Total slides = Dynamic Images
+    const totalSlides = imageSlides.length;
 
     this.innerHTML = `
       <section style="height: calc(100dvh - 80px); min-height: 600px;" class="relative w-full overflow-hidden bg-[#0d1020] group/slider" id="hero-slider-container">
         
-<div class="absolute inset-0 z-10 transition-opacity duration-1000 ease-in-out opacity-100 hero-slide" data-index="0">
-          <div class="absolute inset-0 z-0" style="
-            background:
-              linear-gradient(160deg, #0d1433 0%, #1a2550 30%, #24305e 55%, #1e1a40 80%, #0d1020 100%),
-              radial-gradient(ellipse 100% 50% at 50% 100%, rgba(57,74,138,0.55) 0%, transparent 60%),
-              radial-gradient(ellipse 50% 80% at 90% 10%, rgba(196,54,67,0.18) 0%, transparent 55%),
-              radial-gradient(ellipse 30% 40% at 10% 30%, rgba(80,100,180,0.2) 0%, transparent 60%);
-            background-blend-mode: normal, screen, screen, screen;
-          "></div>
-          <div class="relative z-10 w-full h-full flex items-center justify-center text-center px-4 sm:px-6 lg:px-8">
-            <div class="max-w-4xl mx-auto flex flex-col items-center gap-6 md:gap-8">
-              <p class="text-xs md:text-sm font-black tracking-[0.3em] uppercase text-ucu-yellow border-b-2 border-ucu-red pb-2 inline-block">Urdaneta City University</p>
-              <h1 class="text-5xl md:text-6xl lg:text-[5.5rem] font-black text-white leading-[1.05] tracking-tight" style="text-shadow: 0 4px 24px rgba(0,0,0,0.4);">
-                Global Standards.<br><span class="text-ucu-yellow">Local Impact.</span>
-              </h1>
-              <p class="text-base md:text-xl text-white/80 max-w-[65ch] font-medium leading-relaxed">
-                Driving institutional excellence through strategic international linkages, high-impact research, and an unwavering commitment to the UN Sustainable Development Goals.
-              </p>
-              <div class="flex flex-wrap justify-center gap-4 mt-4">
-                <a href="${base}partnership.html" class="px-8 py-4 bg-ucu-yellow text-ucu-blue-dark text-[11px] font-black tracking-[0.2em] uppercase rounded-xl transition-all duration-300 hover:bg-white hover:-translate-y-1 shadow-[0_8px_20px_rgba(251,239,75,0.2)] focus:outline-none">
-                  Explore Partnerships
-                </a>
-                <a href="${base}sdg-reports/2025.html" class="px-8 py-4 bg-white/5 border border-white/20 text-white text-[11px] font-bold tracking-[0.2em] uppercase rounded-xl transition-all duration-300 hover:bg-white/10 hover:-translate-y-1 backdrop-blur-sm focus:outline-none">
-                  View SDG Reports
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-
         ${imageSlides.map((src, i) => `
-          <div class="absolute inset-0 z-0 transition-opacity duration-1000 ease-in-out opacity-0 hero-slide" data-index="${i + 1}">
+          <div class="absolute inset-0 z-0 transition-opacity duration-1000 ease-in-out ${i === 0 ? 'opacity-100' : 'opacity-0'} hero-slide" data-index="${i}">
             <img src="${src}" class="w-full h-full object-cover object-center hero-img" alt="UCU Campus Slide ${i + 1}" loading="lazy" decoding="async" onerror="this.style.display='none'">
             <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-black/30 pointer-events-none"></div>
           </div>
@@ -150,15 +142,23 @@ class UcuHomeHeroSlider extends HTMLElement {
 }
 
 class UcuHeroBanner extends HTMLElement {
+  static get observedAttributes() {
+    return ['eyebrow', 'headline', 'title', 'highlight', 'description', 'subtitle', 'bg-color', 'carousel'];
+  }
+
+  attributeChangedCallback(name, oldVal, newVal) {
+    if (oldVal !== newVal) {
+      this.hasRendered = false;
+      this.connectedCallback();
+    }
+  }
+
   connectedCallback() {
     this.style.display = "block";
     this.style.width = "100%";
     this.style.position = "sticky";
     this.style.top = "0";
     this.style.zIndex = "0";
-
-    if (this.hasRendered) return;
-    this.hasRendered = true;
 
     const bgColor = this.getAttribute("bg-color") || "bg-ucu-blue";
     const eyebrow = this.getAttribute("eyebrow") || "";
@@ -329,10 +329,18 @@ class UcuHeroBanner extends HTMLElement {
 }
 
 class UcuImageSlider extends HTMLElement {
-  connectedCallback() {
-    if (this.hasRendered) return;
-    this.hasRendered = true;
+  static get observedAttributes() {
+    return ['images', 'duration'];
+  }
 
+  attributeChangedCallback(name, oldVal, newVal) {
+    if (oldVal !== newVal) {
+      this.hasRendered = false;
+      this.connectedCallback();
+    }
+  }
+
+  connectedCallback() {
     this.duration = parseInt(this.getAttribute("duration") || "4000", 10);
     const imagesRaw = this.getAttribute("images");
     this.images = [];
@@ -431,27 +439,82 @@ class UcuImageSlider extends HTMLElement {
 }
 
 class UcuMetricCards extends HTMLElement {
+  static get observedAttributes() {
+    return ["data-metrics"];
+  }
+
+  attributeChangedCallback(name, oldVal, newVal) {
+    if (name === "data-metrics" && oldVal !== newVal) {
+      this.connectedCallback();
+    }
+  }
+
   connectedCallback() {
-    if (this.hasRendered) return;
     this.hasRendered = true;
 
-    const metricsData = this.getAttribute("data-metrics");
+    let metricsData = this.getAttribute("data-metrics");
     if (!metricsData) return;
 
     let metrics = [];
     try {
-      metrics = JSON.parse(metricsData);
+      if (typeof metricsData === 'string') {
+        if (metricsData.includes("%5B") || metricsData.includes("%7B") || metricsData.startsWith("%")) {
+          metricsData = decodeURIComponent(metricsData);
+        }
+        if (metricsData.includes("&quot;")) {
+          metricsData = metricsData.replace(/&quot;/g, '"');
+        }
+        metrics = JSON.parse(metricsData);
+      }
     } catch (e) {
-      console.error("Invalid metrics data in UcuMetricCards.");
-      return;
+      try {
+        metrics = JSON.parse(decodeURIComponent(metricsData));
+      } catch (e2) {
+        console.error("Invalid metrics data in UcuMetricCards:", e, metricsData);
+        return;
+      }
     }
 
+    if (!Array.isArray(metrics) || metrics.length === 0) return;
+
     const themeStyles = {
-      navy: { bg: "bg-ucu-blue-dark", value: "text-white", label: "text-white/90", icon: "text-ucu-yellow" },
-      red: { bg: "bg-ucu-red", value: "text-white", label: "text-white/90", icon: "text-ucu-yellow" },
-      yellow: { bg: "bg-ucu-yellow", value: "text-ucu-blue-dark", label: "text-ucu-blue-dark/90", icon: "text-ucu-red" },
-      white: { bg: "bg-ucu-white", value: "text-ucu-blue-dark", label: "text-ucu-blue-dark/90", icon: "text-ucu-red" },
+      navy: { 
+        bg: "bg-ucu-blue-dark text-white shadow-md border border-white/5", 
+        value: "!text-white", 
+        label: "!text-white/90", 
+        icon: "!text-ucu-yellow" 
+      },
+      blue: { 
+        bg: "bg-ucu-blue-dark text-white shadow-md border border-white/5", 
+        value: "!text-white", 
+        label: "!text-white/90", 
+        icon: "!text-ucu-yellow" 
+      },
+      red: { 
+        bg: "bg-ucu-red text-white shadow-md border border-white/5", 
+        value: "!text-white", 
+        label: "!text-white/90", 
+        icon: "!text-ucu-yellow" 
+      },
+      yellow: { 
+        bg: "bg-ucu-yellow text-ucu-blue-dark shadow-md border border-black/5", 
+        value: "!text-ucu-blue-dark", 
+        label: "!text-ucu-blue-dark/90", 
+        icon: "!text-ucu-red" 
+      },
+      white: { 
+        bg: "bg-white text-ucu-blue-dark border border-slate-100 shadow-md", 
+        value: "!text-ucu-blue-dark", 
+        label: "!text-slate-600", 
+        icon: "!text-ucu-red" 
+      },
     };
+
+    const defaultIcons = [
+      `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
+      `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>`,
+      `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>`
+    ];
 
     const getGridClass = (count) => {
       if (count === 1) return "grid-cols-1";
@@ -463,15 +526,14 @@ class UcuMetricCards extends HTMLElement {
       return "grid-cols-1 md:grid-cols-3";
     };
 
-    const cardsHtml = metrics.map((metric) => {
+    const cardsHtml = metrics.map((metric, idx) => {
       const activeTheme = metric.theme || "navy";
-      const styles = themeStyles[activeTheme];
+      const styles = themeStyles[activeTheme] || themeStyles.navy;
       
-      // ARCHITECTURAL UPGRADE: Registry Intercept Logic
-      // If 'metricId' exists and is found in the registry, use it. Otherwise, fallback to the hardcoded 'value'.
-      const displayValue = (metric.metricId && window.UCU_METRICS && window.UCU_METRICS[metric.metricId] !== undefined)
-        ? window.UCU_METRICS[metric.metricId]
-        : metric.value;
+      // CMS Direct Value (No automated math or system link overrides)
+      const displayValue = (metric.value !== undefined && metric.value !== null && metric.value !== "")
+        ? String(metric.value)
+        : "0";
 
       const hasTrigger = !!metric.evidenceId;
       const tagName = hasTrigger ? "button" : "div";
@@ -479,18 +541,117 @@ class UcuMetricCards extends HTMLElement {
       const hoverClasses = hasTrigger ? "cursor-pointer text-left w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-ucu-red focus-visible:ring-offset-2" : "";
 
       const valueSizeClass = displayValue.length > 8 ? "text-xl md:text-2xl" : "text-3xl md:text-4xl";
+      
+      // Dynamic Lucide Icon Resolution
+      let iconSvg = '';
+      const iconKey = metric.icon || metric.iconName;
+      if (iconKey && window.lucide) {
+        const raw = String(iconKey).trim();
+        const kebab = raw.replace(/([a-z0-9])([A-Z])/g, (m, a, b) => a + '-' + b).toLowerCase();
+        const pascal = kebab.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');
+        const camel = pascal.charAt(0).toLowerCase() + pascal.slice(1);
+        
+        const sources = [window.lucide.icons, window.lucide];
+        let def = null;
+        for (const src of sources) {
+          if (!src) continue;
+          if (src[raw]) { def = src[raw]; break; }
+          if (src[pascal]) { def = src[pascal]; break; }
+          if (src[kebab]) { def = src[kebab]; break; }
+          if (src[camel]) { def = src[camel]; break; }
+        }
+
+        if (Array.isArray(def)) {
+          const inner = def.map(([tag, attrs]) => {
+            const attrStr = Object.entries(attrs).map(([k, v]) => `${k}="${v}"`).join(' ');
+            return `<${tag} ${attrStr}/>`;
+          }).join('');
+          iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`;
+        } else if (def && typeof def.toSvg === 'function') {
+          iconSvg = def.toSvg({ width: 28, height: 28, 'stroke-width': 2 });
+        }
+      }
+
+      if (!iconSvg) {
+        iconSvg = (metric.svgIcon && typeof metric.svgIcon === 'string' && metric.svgIcon.includes('<svg'))
+          ? metric.svgIcon
+          : defaultIcons[idx % defaultIcons.length];
+      }
+
+      // Ensure SVG stroke adapts to current theme icon color
+      if (iconSvg && typeof iconSvg === 'string') {
+        iconSvg = iconSvg.replace(/stroke="(?!(none|currentColor))[^"]+"/gi, 'stroke="currentColor"');
+      }
 
       return `
-        <${tagName} ${extraAttrs} class="${styles.bg} rounded-2xl p-6 shadow-lg hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-center min-h-[140px] border border-white/5 group ${hoverClasses}">
-          ${metric.svgIcon ? `<div class="flex items-center gap-2 mb-3 ${styles.icon} opacity-90 scale-110 origin-left transition-transform duration-300 group-hover:scale-125">${metric.svgIcon}</div>` : ""}
-          <h3 class="${valueSizeClass} font-black tracking-tighter leading-none ${styles.value}">${displayValue}</h3>
-          <div class="${styles.label} text-[10px] font-bold uppercase tracking-[0.15em] mt-2">${metric.label}</div>
+        <${tagName} ${extraAttrs} class="${styles.bg} rounded-2xl p-6 shadow-md hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-center min-h-[140px] group ${hoverClasses}">
+          <div class="flex items-center gap-2 mb-3 text-2xl ${styles.icon} transition-transform duration-300 group-hover:scale-110">${iconSvg}</div>
+          <div class="${valueSizeClass} font-black tracking-tight leading-none ${styles.value} ucu-counter mb-2" data-target="${displayValue}">${displayValue}</div>
+          <div class="${styles.label} text-[10px] md:text-[11px] font-bold uppercase tracking-[0.15em] leading-tight">${metric.label || ''}</div>
         </${tagName}>
       `;
     }).join("");
 
     const gridClass = this.getAttribute("grid-class") || getGridClass(metrics.length);
     this.innerHTML = `<div class="w-full grid gap-4 md:gap-6 ${gridClass}">${cardsHtml}</div>`;
+
+    this.initCounterAnimations();
+  }
+
+  initCounterAnimations() {
+    const counters = this.querySelectorAll('.ucu-counter');
+    if (!counters.length) return;
+
+    const isIframe = window.self !== window.top || window.location.search.includes('cms_preview=true') || window.location.search.includes('preview=true');
+    if (isIframe || !('IntersectionObserver' in window)) {
+      counters.forEach(c => {
+        const targetStr = c.getAttribute('data-target') || c.textContent;
+        c.textContent = targetStr;
+      });
+      return;
+    }
+
+    const observer = new IntersectionObserver((entries, obs) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const el = entry.target;
+          const targetStr = el.getAttribute('data-target') || el.textContent;
+          obs.unobserve(el);
+          this.animateNumber(el, targetStr);
+        }
+      });
+    }, { threshold: 0.01 });
+
+    counters.forEach(c => observer.observe(c));
+  }
+
+  animateNumber(element, targetStr, duration = 1200) {
+    const cleanStr = String(targetStr).trim();
+    const match = cleanStr.match(/^([^0-9.]*)([0-9]+(?:\.[0-9]+)?)(.*)$/);
+    if (!match) {
+      element.textContent = cleanStr;
+      return;
+    }
+
+    const prefix = match[1];
+    const targetNum = parseFloat(match[2].replace(/,/g, ''));
+    const suffix = match[3];
+    const isFloat = match[2].includes('.');
+
+    const startTime = performance.now();
+    const step = (currentTime) => {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const easeOut = 1 - Math.pow(1 - progress, 3);
+      const currentNum = isFloat ? (targetNum * easeOut).toFixed(1) : Math.round(targetNum * easeOut);
+      element.textContent = `${prefix}${currentNum.toLocaleString()}${suffix}`;
+      if (progress < 1) {
+        requestAnimationFrame(step);
+      } else {
+        element.textContent = cleanStr;
+      }
+    };
+    requestAnimationFrame(step);
   }
 }
 
@@ -517,5 +678,4 @@ if (!customElements.get("ucu-home-hero-slider")) customElements.define("ucu-home
 if (!customElements.get("ucu-hero-banner")) customElements.define("ucu-hero-banner", UcuHeroBanner);
 if (!customElements.get("ucu-image-slider")) customElements.define("ucu-image-slider", UcuImageSlider);
 if (!customElements.get("ucu-metric-cards")) customElements.define("ucu-metric-cards", UcuMetricCards);
-if (!customElements.get("sdg-badge")) customElements.define("sdg-badge", SdgBadge);
 if (!customElements.get("ucu-metric")) customElements.define("ucu-metric", UcuMetric);

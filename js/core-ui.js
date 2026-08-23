@@ -22,9 +22,86 @@ window.ucuGetBasePath = () => {
   return './';
 };
 
+window.ucuResolveMediaSrc = (src, basePath = null) => {
+  if (!src) return '';
+  if (src.startsWith('data:') || src.startsWith('http://') || src.startsWith('https://') || src.startsWith('//') || src.startsWith('blob:')) {
+    return src;
+  }
+  const base = basePath !== null ? basePath : (window.ucuGetBasePath ? window.ucuGetBasePath() : './');
+  let clean = src;
+  while (clean.startsWith('../')) clean = clean.substring(3);
+  if (clean.startsWith('./')) clean = clean.substring(2);
+  if (clean.startsWith('/')) clean = clean.substring(1);
+  return `${base}${clean}`;
+};
+
 window.ucuHandleImageError = (imgEl) => {
   imgEl.onerror = null; // Prevent infinite loop if fallback fails
   imgEl.src = "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 800 450'%3E%3Crect width='100%25' height='100%25' fill='%2324305e'/%3E%3Ccircle cx='400' cy='225' r='180' fill='none' stroke='%23fbef4b' stroke-width='1.5' stroke-opacity='0.15'/%3E%3Ccircle cx='400' cy='225' r='120' fill='none' stroke='%23c43643' stroke-width='1.5' stroke-opacity='0.2'/%3E%3Ctext x='50%25' y='46%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-weight='900' font-size='26' fill='%23ffffff' letter-spacing='4'%3EURDANETA CITY UNIVERSITY%3C/text%3E%3Ctext x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-weight='700' font-size='14' fill='%23fbef4b' letter-spacing='6'%3EEXTERNAL AFFAIRS %26 LINKAGES%3C/text%3E%3C/svg%3E";
+};
+
+window.ucuOpenPdfDocument = (pdfSrc, title = 'Research Document - Urdaneta City University') => {
+  if (!pdfSrc || pdfSrc === '#') {
+    alert('No PDF document is currently attached to this publication.');
+    return;
+  }
+
+  // 1. If it's a real HTTP / HTTPS or relative path URL, open natively
+  if (pdfSrc.startsWith('http://') || pdfSrc.startsWith('https://') || (!pdfSrc.startsWith('data:') && !pdfSrc.startsWith('blob:'))) {
+    const resolved = window.ucuResolveMediaSrc ? window.ucuResolveMediaSrc(pdfSrc) : pdfSrc;
+    window.open(resolved, '_blank', 'noopener,noreferrer');
+    return;
+  }
+
+  // 2. Handle Base64 / Blob URLs via an embedded viewer window
+  // This bypasses Chrome/Brave's "about:blank#blocked" restriction against top-frame blob/data navigation.
+  try {
+    let blobUrl = pdfSrc;
+    if (pdfSrc.startsWith('data:')) {
+      const parts = pdfSrc.split(',');
+      const base64Data = parts.length > 1 ? parts[1] : parts[0];
+      const byteCharacters = atob(base64Data);
+      const byteNumbers = new Uint8Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const blob = new Blob([byteNumbers], { type: 'application/pdf' });
+      blobUrl = URL.createObjectURL(blob);
+    }
+
+    const win = window.open('', '_blank');
+    if (win) {
+      const safeTitle = (title || 'Research Document - Urdaneta City University').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      win.document.write(`<!DOCTYPE html>
+<html lang="en" style="height:100%;width:100%;margin:0;padding:0;">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${safeTitle}</title>
+  <style>
+    html, body { height: 100%; width: 100%; margin: 0; padding: 0; overflow: hidden; background-color: #525659; font-family: system-ui, sans-serif; }
+    iframe { border: none; width: 100%; height: 100%; display: block; }
+  </style>
+</head>
+<body>
+  <iframe src="${blobUrl}" title="${safeTitle}" allowfullscreen></iframe>
+</body>
+</html>`);
+      win.document.close();
+      return;
+    }
+  } catch (e) {
+    console.error('[UCU PDF Reader] Error opening embedded PDF document:', e);
+  }
+
+  // Fallback download if popup blocked
+  const a = document.createElement('a');
+  a.href = pdfSrc;
+  a.target = '_blank';
+  a.download = (title || 'research-document').replace(/[^a-zA-Z0-9_-]/g, '_') + '.pdf';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
 };
 
 /* ==========================================================================
@@ -47,30 +124,10 @@ class UcuHeader extends HTMLElement {
 
     const mainNavLinks = [
       { name: "Home", url: "index.html" },
-      {
-        name: "SDG Reports",
-        dropdown: [
-          { name: "2025", url: "sdg-reports/2025.html" },
-          { name: "2024", url: "sdg-reports/2024.html" },
-          { name: "2023", url: "sdg-reports/2023.html" },
-        ],
-      },
-      {
-        name: "Research",
-        dropdown: [
-          { name: "2025", url: "research/2025.html" },
-          { name: "2024", url: "research/2024.html" },
-          { name: "2023", url: "research/2023.html" },
-        ],
-      },
-      {
-        name: "Impact & Events",
-        dropdown: [
-          { name: "2025", url: "impact/2025.html" },
-          { name: "2024", url: "impact/2024.html" },
-          { name: "2023", url: "impact/2023.html" },
-        ],
-      },
+      { name: "Announcements", url: "announcement.html" },
+      { name: "SDG Reports", url: "sdg-reports.html" },
+      { name: "Research", url: "research.html" },
+      { name: "Impact & Events", url: "impact.html" },
       { name: "Rankings", url: "rankings.html" },
       { name: "Partnerships", url: "partnership.html" },
       { name: "Smart Eco Campus", url: "smart-eco-campus.html" },
@@ -78,7 +135,8 @@ class UcuHeader extends HTMLElement {
 
     const isActive = (url) => {
       if (url === "index.html") return currentPath.endsWith("/") || currentPath.endsWith("index.html");
-      return currentPath.includes(url.split("/")[0]);
+      const pageBase = url.replace(".html", "");
+      return currentPath.includes(pageBase);
     };
 
     /* ── GENERATE MOBILE HTML LINKS (ACCORDION STRUCTURE) ── */
@@ -103,6 +161,7 @@ class UcuHeader extends HTMLElement {
 
     /* ── START STATELESS BREADCRUMB ENGINE ── */
     const PATH_DICTIONARY = {
+      "announcement": "Announcements",
       "rankings": "Rankings",
       "partnership": "Partnerships",
       "infrastructure": "Setting & Infrastructure",
@@ -144,7 +203,7 @@ class UcuHeader extends HTMLElement {
     let breadcrumbTrail = [{ label: "Home", url: base + "index.html" }];
 
     const validSegments = [
-      'sdg-reports', 'research', 'impact', 'events', 'indicators', 'smart-eco-campus', 'rankings', 'partnership',
+      'announcement', 'sdg-reports', 'research', 'impact', 'events', 'indicators', 'smart-eco-campus', 'rankings', 'partnership',
       '2025', '2024', '2023', 'index'
     ];
     const indicatorsList = ["infrastructure", "energy", "waste", "water", "transportation", "education", "digitalization"];
@@ -176,7 +235,7 @@ class UcuHeader extends HTMLElement {
         let prevFolder = appPath[index - 1];
         if (prevFolder === "events") prevFolder = "impact"; 
         if (prevFolder) href = `${base}${prevFolder}/${segment}.html`;
-      } else if (["rankings", "partnership", "smart-eco-campus"].includes(segment)) {
+      } else if (["rankings", "partnership", "smart-eco-campus", "announcement"].includes(segment)) {
         href = base + segment + ".html";
       }
 
@@ -349,9 +408,10 @@ class UcuFooter extends HTMLElement {
             <h3 class="text-ucu-yellow mb-4 font-bold tracking-widest uppercase text-[11px]">Quick Links</h3>
             <nav class="flex flex-col gap-2.5">
               <a href="${base}index.html" class="text-white/80 hover:text-ucu-yellow text-[13px] font-medium transition-colors">Home</a>
-              <a href="${base}sdg-reports/2025.html" class="text-white/80 hover:text-ucu-yellow text-[13px] font-medium transition-colors">SDG Reports</a>
-              <a href="${base}research/2025.html" class="text-white/80 hover:text-ucu-yellow text-[13px] font-medium transition-colors">Research</a>
-              <a href="${base}impact/2025.html" class="text-white/80 hover:text-ucu-yellow text-[13px] font-medium transition-colors">Impact & Events</a>
+              <a href="${base}announcement.html" class="text-white/80 hover:text-ucu-yellow text-[13px] font-medium transition-colors">Announcements</a>
+              <a href="${base}sdg-reports.html" class="text-white/80 hover:text-ucu-yellow text-[13px] font-medium transition-colors">SDG Reports</a>
+              <a href="${base}research.html" class="text-white/80 hover:text-ucu-yellow text-[13px] font-medium transition-colors">Research</a>
+              <a href="${base}impact.html" class="text-white/80 hover:text-ucu-yellow text-[13px] font-medium transition-colors">Impact & Events</a>
               <a href="${base}rankings.html" class="text-white/80 hover:text-ucu-yellow text-[13px] font-medium transition-colors">Rankings</a>
               <a href="${base}partnership.html" class="text-white/80 hover:text-ucu-yellow text-[13px] font-medium transition-colors">Partnerships</a>
               <a href="${base}smart-eco-campus.html" class="text-white/80 hover:text-ucu-yellow text-[13px] font-medium transition-colors">Smart Eco Campus</a>
@@ -365,8 +425,8 @@ class UcuFooter extends HTMLElement {
                 <span class="text-white/90 text-xs font-medium tracking-wide">UCU Official Website</span>
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-ucu-yellow opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
               </a>
-              <a href="${base}sdg-reports/2025.html" class="group flex items-center justify-between bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg px-4 py-3 transition-all duration-300 backdrop-blur-sm">
-                <span class="text-white/90 text-xs font-medium tracking-wide">SDG Archives</span>
+              <a href="${base}sdg-reports.html" class="group flex items-center justify-between bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg px-4 py-3 transition-all duration-300 backdrop-blur-sm">
+                <span class="text-white/90 text-xs font-medium tracking-wide">SDG Reports Hub</span>
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-ucu-yellow opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
               </a>
               <a href="https://forms.google.com/your-form-id-here" target="_blank" rel="noopener noreferrer" class="group flex items-center justify-between bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg px-4 py-3 transition-all duration-300 backdrop-blur-sm">
@@ -436,10 +496,17 @@ class UcuFooter extends HTMLElement {
 }
 
 class UcuSectionHeader extends HTMLElement {
-  connectedCallback() {
-    if (this.hasRendered) return;
-    this.hasRendered = true;
+  static get observedAttributes() {
+    return ['eyebrow', 'title', 'link-text', 'link-url', 'delay'];
+  }
 
+  attributeChangedCallback(name, oldVal, newVal) {
+    if (oldVal !== newVal) {
+      this.connectedCallback();
+    }
+  }
+
+  connectedCallback() {
     const eyebrow = this.getAttribute("eyebrow") || "";
     const title = this.getAttribute("title") || "";
     const linkText = this.getAttribute("link-text") || "";
@@ -453,7 +520,7 @@ class UcuSectionHeader extends HTMLElement {
     ` : "";
 
     this.innerHTML = `
-      <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-10 reveal-on-scroll" style="transition-delay: ${delay};">
+      <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-10 reveal-on-scroll is-visible" style="transition-delay: ${delay};">
         <div>
           ${eyebrow ? `<p class="text-[10px] font-bold tracking-[0.25em] uppercase text-ucu-red mb-2">${eyebrow}</p>` : ""}
           <h2 class="text-3xl md:text-4xl font-black text-ucu-blue-dark">${title}</h2>
@@ -461,6 +528,7 @@ class UcuSectionHeader extends HTMLElement {
         ${linkMarkup}
       </div>
     `;
+    this.hasRendered = true;
   }
 }
 
@@ -468,30 +536,37 @@ class UcuSectionHeader extends HTMLElement {
    5. GLOBAL UTILITIES & ANIMATION ENGINE
    ========================================================================== */
 
+// Global Scroll Reveal Engine
+window.ucuInitScrollReveal = function(container = document) {
+  const revealElements = container.querySelectorAll(".reveal-on-scroll:not(.is-visible)");
+  if (!revealElements.length) return;
+
+  const isIframe = window.self !== window.top || window.location.search.includes('cms_preview=true');
+  if (isIframe || !('IntersectionObserver' in window)) {
+    revealElements.forEach(el => el.classList.add('is-visible'));
+    return;
+  }
+
+  const observer = new IntersectionObserver((entries, obs) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add("is-visible");
+        obs.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.01, rootMargin: "100px 0px" });
+
+  revealElements.forEach(el => observer.observe(el));
+
+  // Safety fallback: ensure elements become visible
+  setTimeout(() => {
+    revealElements.forEach(el => el.classList.add('is-visible'));
+  }, 400);
+};
+
 document.addEventListener("DOMContentLoaded", () => {
   // 1. Standardized Scroll Reveal Observer
-  const revealElements = document.querySelectorAll(".reveal-on-scroll");
-
-  if (revealElements.length > 0) {
-    const revealObserver = new IntersectionObserver(
-      (entries, observer) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add("is-visible");
-            // Stop observing once revealed to optimize performance
-            observer.unobserve(entry.target);
-          }
-        });
-      },
-      {
-        root: null,
-        rootMargin: "0px 0px -50px 0px", // Triggers slightly before element enters
-        threshold: 0.1, // Triggers when 10% is visible
-      }
-    );
-
-    revealElements.forEach((el) => revealObserver.observe(el));
-  }
+  window.ucuInitScrollReveal();
 
   // 2. Dynamic, Responsive "Back to Top" Button
   const backToTopBtn = document.createElement("button");

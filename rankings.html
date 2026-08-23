@@ -9,34 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-      tailwind.config = {
-          theme: {
-              extend: {
-                  colors: {
-                      'ucu-blue': '#394a8a',
-                      'ucu-blue-dark': '#24305e',
-                      'ucu-yellow': '#fbef4b',
-                      'ucu-red': '#c43643',
-                      'ucu-white': '#ffffff',
-                      'dark-red': '#912020',
-                      'canvas': '#f4f7fa',
-                      'muted': '#555555',
-                      'main2': '#1f1f1f',
-                      // SDG Official Brand Colors for Exception Use Only
-                      'sdg-1': '#E5243B',
-                      'sdg-3': '#4C9F38',
-                      'sdg-4': '#C5192D',
-                      'sdg-5': '#FF3A21',
-                      'sdg-16': '#00689D',
-                      'sdg-17': '#19486A',
-                  },
-                  fontFamily: { sans: ['Montserrat', 'sans-serif'] }
-              }
-          }
-      }
-  </script>
+  <link rel="stylesheet" href="./css/style.css">
   
   <script src="./js/rankings-data.js" defer></script>
   <script src="./js/institutional-data.js" defer></script>
@@ -44,6 +17,7 @@
   <script src="./js/core-ui.js" defer></script>
   <script src="./js/visual-media.js" defer></script>
   <script src="./js/impact-feeds.js" defer></script>
+  <script src="./js/firebase-public-sync.js" defer></script>
 </head>
 
 <body class="bg-canvas text-main2 font-sans antialiased min-h-screen flex flex-col relative z-0 overflow-x-hidden">
@@ -63,10 +37,9 @@
 
     <section class="max-w-[1280px] w-full mx-auto px-4 sm:px-6 lg:px-8 relative z-20 pt-12 mb-24 reveal opacity-0 translate-y-8 transition-all duration-[800ms] ease-[cubic-bezier(0.16,1,0.3,1)] delay-100">      
       
-      <div class="flex items-center w-full mb-8 gap-4">
-        <div class="w-1.5 h-6 bg-ucu-red rounded-full shadow-sm flex-shrink-0"></div>
-        <h2 class="flex-shrink-0 text-xl md:text-2xl font-bold text-ucu-blue-dark tracking-tight m-0 pr-2">Current Global Standing</h2>
-        <div class="flex-grow h-px bg-gray-300/70 rounded-full"></div>
+      <div class="flex items-center justify-between w-full mb-8 gap-4">
+        <h2 id="standing-title" class="flex-shrink-0 text-2xl sm:text-3xl md:text-4xl font-black text-ucu-blue-dark tracking-tight m-0 pr-2 font-sans">Current Global Standing</h2>
+        <div class="flex-grow h-px bg-slate-200/80 rounded-full hidden sm:block"></div>
       </div>
       
       <ucu-ranking-carousel class="block w-full min-h-[350px] md:min-h-[400px]"></ucu-ranking-carousel>
@@ -78,8 +51,8 @@
         
         <div class="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-8">
           <div>
-            <h2 class="text-xs font-black uppercase tracking-[0.2em] text-muted mb-3">Institutional Trajectory</h2>
-            <h3 class="text-3xl md:text-4xl font-black text-ucu-blue-dark">Historical Performance</h3>
+            <h2 id="trajectory-eyebrow" class="text-xs font-black uppercase tracking-[0.2em] text-muted mb-3">Institutional Trajectory</h2>
+            <h3 id="trajectory-title" class="text-3xl md:text-4xl font-black text-ucu-blue-dark">Historical Performance</h3>
           </div>
 
           <div class="flex flex-wrap gap-2.5" id="filter-group">

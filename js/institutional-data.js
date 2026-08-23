@@ -9,12 +9,17 @@
 
 class UcuRankingCarousel extends HTMLElement {
   connectedCallback() {
-    if (this.hasRendered) return;
-    this.hasRendered = true;
+    this.render();
+  }
 
+  render() {
     const rankings = window.UCU_RANKINGS || [];
-    const highlights = rankings.filter((r) => r.shortDescription);
-    if (highlights.length === 0) return;
+    const highlights = rankings.filter((r) => r.shortDescription && r.shortDescription.trim() !== "");
+    const renderList = highlights.length > 0 ? highlights : rankings;
+    if (renderList.length === 0) {
+      this.innerHTML = '';
+      return;
+    }
 
     const formatCrownRank = (val) => {
       if (typeof val === "string" && val.includes("#")) {
@@ -23,24 +28,35 @@ class UcuRankingCarousel extends HTMLElement {
       return val;
     };
 
-    const generateCard = (rank) => `
-      <div class="flex-none w-[320px] md:w-[380px] group/card cursor-pointer">
-        <div class="h-full bg-white border border-gray-200 p-8 md:p-10 rounded-[1.5rem] flex flex-col justify-between transition-all duration-500 hover:border-ucu-blue/30 shadow-[0_8px_20px_rgba(36,48,94,0.04)] hover:shadow-[0_15px_40px_rgba(36,48,94,0.08)]">
-          <div>
-            <div class="flex justify-between items-center mb-6">
-              <span class="text-[10px] font-bold px-3 py-1 rounded-[6px] uppercase tracking-widest ${rank.crownBadgeClass || rank.badgeClass}">${rank.org}</span>
-              <span class="text-ucu-blue-dark text-sm font-black">${rank.year}</span>
-            </div>
-            <h3 class="text-6xl font-black mb-1 text-ucu-blue-dark transition-transform flex items-baseline tracking-tighter leading-none">${formatCrownRank(rank.mainRank)}</h3>
-            <p class="text-ucu-blue-dark text-[10px] font-bold mb-4 uppercase tracking-[0.15em] mt-3">${rank.category}</p>
-            <div class="flex items-center gap-1.5 mt-4"><div class="w-7 h-1 rounded-full bg-ucu-blue"></div><div class="w-3 h-1 rounded-full bg-ucu-red"></div></div>
-          </div>
-          <div class="mt-8 border-t border-black/5 pt-6"><p class="text-muted/90 text-xs font-medium leading-relaxed">${rank.shortDescription}</p></div>
-        </div>
-      </div>
-    `;
+    const logoMap = {
+      "AppliedHE": "images/rankings-logo/applied-he.png",
+      "THE Impact": "images/rankings-logo/the-impact.png",
+      "UI GreenMetric": "images/rankings-logo/ui-green.png",
+      "WURI": "images/rankings-logo/wuri.png",
+      "HE HIGHER EDUCATION": "images/rankings-logo/higher-education.png"
+    };
 
-    const marqueeItems = [...highlights, ...highlights, ...highlights];
+    const generateCard = (rank) => {
+      const badgeStyle = rank.badgeColor ? `style="background-color: ${rank.badgeColor}; color: #ffffff;"` : '';
+      return `
+        <div class="flex-none w-[320px] md:w-[380px] group/card cursor-pointer">
+          <div class="h-full bg-white border border-gray-200 p-8 md:p-10 rounded-[1.5rem] flex flex-col justify-between transition-all duration-500 hover:border-ucu-blue/30 shadow-[0_8px_20px_rgba(36,48,94,0.04)] hover:shadow-[0_15px_40px_rgba(36,48,94,0.08)] relative overflow-hidden">
+            <div>
+              <div class="flex justify-between items-center mb-6">
+                <span class="text-[10px] font-bold px-3 py-1 rounded-[6px] uppercase tracking-widest ${rank.crownBadgeClass || rank.badgeClass || 'bg-ucu-blue-dark text-white'}" ${badgeStyle}>${rank.org}</span>
+                <span class="text-ucu-blue-dark text-sm font-black">${rank.year}</span>
+              </div>
+              <h3 class="text-6xl font-black mb-1 text-ucu-blue-dark transition-transform flex items-baseline tracking-tighter leading-none">${formatCrownRank(rank.mainRank)}</h3>
+              <p class="text-ucu-blue-dark text-[10px] font-bold mb-4 uppercase tracking-[0.15em] mt-3">${rank.category || rank.mainRankLabel || ''}</p>
+              <div class="flex items-center gap-1.5 mt-4"><div class="w-7 h-1 rounded-full bg-ucu-blue"></div><div class="w-3 h-1 rounded-full bg-ucu-red"></div></div>
+            </div>
+            <div class="mt-8 border-t border-black/5 pt-6"><p class="text-muted/90 text-xs font-medium leading-relaxed">${rank.shortDescription || rank.mainRankLabel || ''}</p></div>
+          </div>
+        </div>
+      `;
+    };
+
+    const marqueeItems = renderList.length < 4 ? [...renderList, ...renderList, ...renderList] : [...renderList, ...renderList];
     const marqueeHtml = marqueeItems.map(generateCard).join("");
 
     this.innerHTML = `
@@ -66,7 +82,7 @@ class UcuRankingCarousel extends HTMLElement {
       const autoScroll = () => {
         if (!isHovered) {
           track.scrollLeft += speed;
-          const singleSetWidth = track.scrollWidth / 3;
+          const singleSetWidth = track.scrollWidth / (renderList.length < 4 ? 3 : 2);
           if (track.scrollLeft >= singleSetWidth) { track.scrollLeft -= singleSetWidth; }
         }
         requestAnimationFrame(autoScroll);
@@ -80,9 +96,10 @@ class UcuRankingCarousel extends HTMLElement {
 
 class UcuRankingTimeline extends HTMLElement {
   connectedCallback() {
-    if (this.hasRendered) return;
-    this.hasRendered = true;
+    this.render();
+  }
 
+  render() {
     const rankings = window.UCU_RANKINGS || [];
     if (rankings.length === 0) {
       this.innerHTML = `<p class="text-muted text-sm italic text-center w-full">Ranking data currently initializing...</p>`;
@@ -124,13 +141,9 @@ class UcuRankingTimeline extends HTMLElement {
       }
 
       const metricsHtml = (rank.metrics || []).map((metric) => {
-        let bgColor = metric.color || "#394a8a";
-        const officialExceptionColors = ["#E5243B", "#4C9F38", "#C5192D", "#FF3A21", "#00689D", "#19486A"];
-        if (!officialExceptionColors.includes(bgColor)) {
-          bgColor = ["#1", "#2"].includes(metric.value.trim()) ? "#c43643" : "#394a8a";
-        }
+        const bgColor = metric.color || "#394a8a";
         return `
-          <div class="relative overflow-hidden p-5 rounded-[12px] shadow-sm hover:shadow-md transition-shadow duration-300 group/metric" style="background-color: ${bgColor};">
+          <div class="relative overflow-hidden p-5 rounded-[12px] shadow-sm hover:shadow-md transition-shadow duration-300 group/metric text-left" style="background-color: ${bgColor};">
             <div class="absolute -bottom-5 -right-5 w-20 h-20 rounded-full bg-white/10 pointer-events-none group-hover/metric:scale-110 transition-transform duration-500"></div>
             <div class="relative z-10">
               <p class="text-[9px] font-bold uppercase text-white/80 tracking-widest mb-1.5 leading-tight">${metric.label}</p>
@@ -141,12 +154,21 @@ class UcuRankingTimeline extends HTMLElement {
         `;
       }).join("");
 
-      const logoSrc = logoMap[rank.org] || "";
+      const rawLogo = rank.logo || logoMap[rank.org] || "";
+      const logoSrc = window.ucuResolveMediaSrc ? window.ucuResolveMediaSrc(rawLogo) : rawLogo;
       const dropBannerHtml = logoSrc ? `
         <div class="absolute top-0 right-6 md:right-10 bg-white shadow-[0_12px_30px_rgba(36,48,94,0.12)] rounded-b-[1.25rem] w-24 md:w-32 h-28 md:h-36 border-2 border-t-0 border-ucu-yellow z-20 flex items-center justify-center transform origin-top transition-transform duration-500 group-hover:scale-[1.03]">
           <img src="${logoSrc}" alt="${rank.org} Logo" class="w-full h-full object-contain p-3 drop-shadow-sm" aria-hidden="true" loading="lazy" onerror="this.style.display='none'">
         </div>
       ` : "";
+
+      let rawPub = (rank.publicationUrl || rank.publicationLink || rank.url || rank.link || '').trim();
+      let pubUrl = rawPub;
+      if (pubUrl && pubUrl !== '#' && !pubUrl.startsWith('http://') && !pubUrl.startsWith('https://') && !pubUrl.startsWith('mailto:') && !pubUrl.startsWith('tel:')) {
+        pubUrl = 'https://' + pubUrl;
+      }
+      const hasPublicationLink = Boolean(pubUrl && pubUrl.length > 3 && pubUrl !== '#' && (pubUrl.startsWith('http://') || pubUrl.startsWith('https://')));
+      const badgeStyle = rank.badgeColor ? `style="background-color: ${rank.badgeColor}; color: #ffffff;"` : '';
 
       return `
         ${yearMilestoneHtml}
@@ -160,18 +182,30 @@ class UcuRankingTimeline extends HTMLElement {
               <div class="relative z-10">
                 <div class="flex items-center gap-3 mb-8 pr-24 md:pr-32">
                   <span class="text-ucu-blue-dark text-sm font-black">${rank.year}</span>
-                  <span class="text-[10px] font-bold px-3 py-1 rounded-md uppercase tracking-widest ${rank.badgeClass} shadow-sm">${rank.org}</span>
+                  <span class="text-[10px] font-bold px-3 py-1 rounded-md uppercase tracking-widest ${rank.badgeClass || 'bg-ucu-blue-dark text-white'} shadow-sm" ${badgeStyle}>${rank.org}</span>
                 </div>
                 <div class="mb-8">
-                  <p class="text-[10px] font-bold text-muted/90 uppercase tracking-[0.15em] mb-1.5">${rank.mainRankLabel}</p>
+                  <p class="text-[10px] font-bold text-muted/90 uppercase tracking-[0.15em] mb-1.5">${rank.mainRankLabel || 'Rank'}</p>
                   <h4 class="text-6xl md:text-7xl font-black text-ucu-blue-dark tracking-tighter leading-none">${rank.mainRank}</h4>
-                  <p class="text-[10px] font-bold text-muted/90 uppercase tracking-[0.15em] mt-3">${rank.category}</p>
+                  <p class="text-[10px] font-bold text-muted/90 uppercase tracking-[0.15em] mt-3">${rank.category || ''}</p>
                   <div class="flex items-center gap-1.5 mt-5"><div class="w-9 h-1 rounded-full bg-ucu-blue"></div><div class="w-5 h-1 rounded-full bg-ucu-red"></div></div>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-4 w-full pt-2">${metricsHtml}</div>
-                <div class="border-t border-black/5 mt-10 pt-5 flex justify-between items-center w-full">
-                  <a href="${rank.publicationUrl}" target="_blank" class="text-[10px] font-black text-ucu-blue-dark/80 hover:text-ucu-red uppercase tracking-widest transition-colors flex items-center gap-1.5 group/link">See Publication<svg class="w-3.5 h-3.5 group-hover/link:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg></a>
-                  <span class="text-[9px] font-bold text-muted/60 uppercase tracking-widest">${rank.publicationDate}</span>
+                
+                <!-- Footer with Category, Date & See Publication Button -->
+                <div class="border-t border-black/5 mt-10 pt-5 flex flex-wrap justify-between items-center gap-3 w-full">
+                  <div class="flex items-center gap-2">
+                    <span class="text-[10px] font-black text-ucu-blue-dark/80 uppercase tracking-widest">${rank.category || 'Accreditation & Ranking'}</span>
+                    <span class="text-gray-300 font-bold">&bull;</span>
+                    <span class="text-[9px] font-bold text-muted/60 uppercase tracking-widest">${rank.publicationDate || rank.year}</span>
+                  </div>
+
+                  ${hasPublicationLink ? `
+                    <a href="${pubUrl}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-ucu-blue hover:text-white text-ucu-blue-dark text-[11px] font-bold transition-all shadow-2xs group/btn cursor-pointer">
+                      <span>See Publication</span>
+                      <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 transition-transform group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                    </a>
+                  ` : ''}
                 </div>
               </div>
             </div>
@@ -180,6 +214,8 @@ class UcuRankingTimeline extends HTMLElement {
         </div>
       `;
     }).join("");
+
+    const terminusQuote = window.UCU_TERMINUS_STATEMENT || `"We will continue our commitment to relentless innovation and real-world impact, ensuring the little giant UCU rises to meet the titans on the global stage."`;
 
     this.innerHTML = `
       <style>
@@ -201,7 +237,7 @@ class UcuRankingTimeline extends HTMLElement {
         
         <div id="terminus-statement-block" class="w-full relative z-10 pt-20 pb-12 text-center timeline-reveal opacity-0 translate-y-12 transition-all duration-[1000ms] ease-[cubic-bezier(0.16,1,0.3,1)]">
           <div class="terminus-pill w-12 h-1.5 bg-ucu-red mx-auto mb-6 rounded-full transition-all duration-300 origin-center border-0 border-ucu-red"></div>
-          <p class="max-w-[65ch] mx-auto text-[15px] md:text-base leading-[1.65] font-medium text-muted text-balance italic">"We will continue our commitment to relentless innovation and real-world impact, ensuring the little giant UCU rises to meet the titans on the global stage."</p>
+          <p id="terminus-text-content" class="max-w-[65ch] mx-auto text-[15px] md:text-base leading-[1.65] font-medium text-muted text-balance italic">${terminusQuote}</p>
         </div>
         <div id="empty-state" class="hidden py-16 text-center w-full relative z-10"><p class="text-muted text-sm font-black uppercase tracking-[0.2em] bg-white/50 border border-white inline-block px-6 py-3 rounded-xl shadow-sm">No rankings found for this category.</p></div>
       </div>
@@ -325,8 +361,6 @@ class UcuRankingTimeline extends HTMLElement {
 
 class UcuPartnerCarousel extends HTMLElement {
   connectedCallback() {
-    if (this.hasRendered) return;
-    this.hasRendered = true;
     const partners = window.UCU_PARTNERS || [];
     const validPartners = partners.filter(p => p.logoSrc && p.logoSrc !== "");
     const renderList = validPartners.length > 0 ? validPartners : Array(10).fill({name: "Partner", logoSrc: "./images/partner-placeholder.png"});
@@ -350,15 +384,21 @@ class UcuPartnerCarousel extends HTMLElement {
 
 class UcuPartnerGrid extends HTMLElement {
   connectedCallback() {
-    if (this.hasRendered) return;
-    this.hasRendered = true;
+    this.render();
+  }
+
+  render() {
     const category = this.getAttribute("category");
     const partners = window.UCU_PARTNERS ? window.UCU_PARTNERS.filter((p) => p.category === category) : [];
     if (partners.length === 0) { this.innerHTML = `<p class="text-muted text-sm italic">Partner data currently initializing...</p>`; return; }
     
+    // Strictly sort alphabetically (A-Z) by partner name
+    partners.sort((a, b) => (a.name || "").localeCompare(b.name || "", undefined, { sensitivity: "base" }));
+    
     const gridHtml = partners.map((partner) => {
+      const resolvedLogo = window.ucuResolveMediaSrc ? window.ucuResolveMediaSrc(partner.logoSrc) : partner.logoSrc;
       const innerHtml = `
-        <img src="${partner.logoSrc}" alt="${partner.name} Logo" class="w-full h-full object-contain transition-all duration-300 group-hover:-translate-y-2 group-hover:scale-[0.70] group-hover:opacity-15 relative z-10" loading="lazy" onerror="this.style.display='none'" />
+        <img src="${resolvedLogo}" alt="${partner.name} Logo" class="w-full h-full object-contain transition-all duration-300 group-hover:-translate-y-2 group-hover:scale-[0.70] group-hover:opacity-15 relative z-10" loading="lazy" onerror="this.style.display='none'" />
         <div class="absolute inset-0 flex items-center justify-center p-3 opacity-0 translate-y-4 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0 pointer-events-none z-10"><span class="text-center text-[0.65rem] font-black text-ucu-blue-dark uppercase tracking-widest whitespace-normal leading-tight text-balance drop-shadow-sm">${partner.name}</span></div>
         <div class="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-ucu-blue to-ucu-red transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500 ease-out origin-center z-20"></div>
       `;
@@ -372,11 +412,13 @@ class UcuPartnerGrid extends HTMLElement {
 
 class UcuCountryGrid extends HTMLElement {
   connectedCallback() {
-    if (this.hasRendered) return;
-    this.hasRendered = true;
+    this.render();
+  }
+
+  render() {
     const countries = window.UCU_COUNTRIES || [];
     if (countries.length === 0) { this.innerHTML = `<p class="text-muted text-sm italic text-center w-full">Country data currently initializing...</p>`; return; }
-    const flagMap = { Philippines: "ph", Turkey: "tr", Bangladesh: "bd", Indonesia: "id", Japan: "jp", Oman: "om", "South Korea": "kr", Thailand: "th", Taiwan: "tw", Vietnam: "vn", Malaysia: "my", China: "cn", "Bosnia and Herzegovina": "ba", "United Kingdom": "gb", Switzerland: "ch", Poland: "pl", USA: "us", Canada: "ca", India: "in", France: "fr", Spain: "es" };
+    const flagMap = { Philippines: "ph", Turkey: "tr", Bangladesh: "bd", Indonesia: "id", Japan: "jp", Oman: "om", "South Korea": "kr", Thailand: "th", Taiwan: "tw", Vietnam: "vn", Malaysia: "my", China: "cn", "Bosnia and Herzegovina": "ba", "United Kingdom": "gb", Switzerland: "ch", Poland: "pl", Germany: "de", USA: "us", Canada: "ca", India: "in", France: "fr", Spain: "es" };
     const pillsHtml = countries.map((country) => {
       const isoCode = flagMap[country] || "un"; 
       return `

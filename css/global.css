@@ -145,12 +145,19 @@
     letter-spacing: -0.02em; 
     line-height: 1.2; 
   }
-  .ucu-prose-evidence h3 { 
+  .ucu-prose-evidence h3:not(ucu-metric-cards *) { 
     color: var(--color-ucu-blue-dark); 
     font-size: 1.05rem; 
     font-weight: 800; 
     margin-top: 1.5rem; 
     margin-bottom: 0.5rem; 
+  }
+
+  /* Metric Cards prose isolation */
+  .ucu-prose-evidence ucu-metric-cards,
+  .ucu-prose-evidence ucu-metric-cards * {
+    margin-top: 0;
+    margin-bottom: 0;
   }
 
   /* Premium Image Presentation */

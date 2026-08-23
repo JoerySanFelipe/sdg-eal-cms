@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>File Picker Diagnostic Test</title>
+  <style>
+    body { font-family: sans-serif; padding: 40px; background: #0f172a; color: white; line-height: 1.6; }
+    .card { background: #1e293b; padding: 24px; border-radius: 12px; max-width: 500px; margin: 0 auto; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+    button { background: #2563eb; color: white; border: none; padding: 12px 20px; font-weight: bold; border-radius: 8px; cursor: pointer; margin-top: 10px; width: 100%; font-size: 14px; }
+    button:hover { background: #1d4ed8; }
+    input[type="file"] { margin: 15px 0; display: block; width: 100%; padding: 10px; background: #334155; border-radius: 8px; }
+    .result { margin-top: 15px; padding: 10px; background: #0284c7; border-radius: 6px; font-size: 12px; word-break: break-all; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>🧪 File Picker Diagnostic Test</h2>
+    <p>Subukan ang dalawang test sa ibaba upang malaman natin kung bakit hinaharang ng browser/OS ang file dialog:</p>
+    
+    <hr style="border-color: #334155; margin: 20px 0;">
+
+    <h3>Test 1: Pure Native HTML File Input</h3>
+    <p style="font-size: 12px; color: #94a3b8;">I-click ang standard button sa ibaba:</p>
+    <input type="file" id="test-native-input" accept="image/*">
+    <div id="result-native" class="result" style="display: none;"></div>
+
+    <hr style="border-color: #334155; margin: 20px 0;">
+
+    <h3>Test 2: JavaScript File System Access API Button</h3>
+    <button type="button" id="test-api-btn">📂 Open File Explorer via JS API</button>
+    <div id="result-api" class="result" style="display: none;"></div>
+  </div>
+
+  <script>
+    // Test 1 Handler
+    document.getElementById('test-native-input').addEventListener('change', (e) => {
+      const res = document.getElementById('result-native');
+      if (e.target.files && e.target.files[0]) {
+        res.style.display = 'block';
+        res.textContent = `✅ NATIVE SUCCESS: File Napili -> ${e.target.files[0].name} (${e.target.files[0].size} bytes)`;
+      }
+    });
+
+    // Test 2 Handler
+    document.getElementById('test-api-btn').addEventListener('click', async () => {
+      const res = document.getElementById('result-api');
+      try {
+        if (typeof window.showOpenFilePicker === 'function') {
+          const [handle] = await window.showOpenFilePicker({
+            types: [{ description: 'Images', accept: { 'image/*': ['.png', '.jpg', '.jpeg', '.webp'] } }]
+          });
+          const file = await handle.getFile();
+          res.style.display = 'block';
+          res.style.background = '#059669';
+          res.textContent = `✅ JS API SUCCESS: File Napili -> ${file.name} (${file.size} bytes)`;
+        } else {
+          res.style.display = 'block';
+          res.style.background = '#dc2626';
+          res.textContent = '❌ showOpenFilePicker not supported in this browser';
+        }
+      } catch (err) {
+        res.style.display = 'block';
+        res.style.background = '#dc2626';
+        res.textContent = `❌ ERROR / CANCELLED: ${err.message || err.name}`;
+      }
+    });
+  </script>
+</body>
+</html>
