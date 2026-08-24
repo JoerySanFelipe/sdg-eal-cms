@@ -568,7 +568,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // 1. Standardized Scroll Reveal Observer
   window.ucuInitScrollReveal();
 
-  // 2. Dynamic, Responsive "Back to Top" Button
+  // 2. Dynamic, Responsive "Back to Top" Button (High-Performance 60-120 FPS RAF Engine)
   const backToTopBtn = document.createElement("button");
   backToTopBtn.id = "ucu-back-to-top";
   backToTopBtn.className = "fixed bottom-6 right-6 z-50 flex items-center justify-center p-3 md:px-5 md:py-3 md:gap-2 rounded-full bg-ucu-red text-white shadow-[0_4px_20px_rgba(196,54,67,0.3)] opacity-0 pointer-events-none transition-all duration-300 hover:bg-ucu-blue-dark hover:scale-105 focus:outline-none focus:ring-2 focus:ring-ucu-yellow translate-y-4 cursor-pointer font-[family-name:var(--font-sans)] font-bold text-xs uppercase tracking-wider";
@@ -585,18 +585,30 @@ document.addEventListener("DOMContentLoaded", () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   });
 
-  const toggleBackToTop = () => {
-    const isScrollable = document.documentElement.scrollHeight > window.innerHeight;
-    const currentScroll = window.scrollY;
+  let ticking = false;
+  let cachedInnerHeight = window.innerHeight;
+  let cachedScrollHeight = document.documentElement.scrollHeight;
+
+  const updateDimensions = () => {
+    cachedInnerHeight = window.innerHeight;
+    cachedScrollHeight = document.documentElement.scrollHeight;
+  };
+
+  const updateBackToTop = () => {
+    ticking = false;
+    const currentScroll = window.scrollY || window.pageYOffset || 0;
+    const isScrollable = cachedScrollHeight > cachedInnerHeight;
 
     if (isScrollable && currentScroll > 300) {
-      backToTopBtn.classList.remove("opacity-0", "pointer-events-none", "translate-y-4");
-      backToTopBtn.classList.add("pointer-events-auto", "translate-y-0");
+      if (backToTopBtn.classList.contains("opacity-0")) {
+        backToTopBtn.classList.remove("opacity-0", "pointer-events-none", "translate-y-4");
+        backToTopBtn.classList.add("pointer-events-auto", "translate-y-0");
+      }
 
       // Calculate scroll fraction to scale opacity (0.6 subtle -> 1.0 full clear at the bottom)
-      const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+      const maxScroll = cachedScrollHeight - cachedInnerHeight;
       const scrollRange = maxScroll - 300;
-      let opacity = 0.6; // Start with 60% opacity at threshold
+      let opacity = 0.6;
 
       if (scrollRange > 0) {
         const fraction = (currentScroll - 300) / scrollRange;
@@ -604,16 +616,33 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       backToTopBtn.style.opacity = Math.min(1.0, Math.max(0.6, opacity));
-    } else {
+    } else if (!backToTopBtn.classList.contains("opacity-0")) {
       backToTopBtn.classList.add("opacity-0", "pointer-events-none", "translate-y-4");
       backToTopBtn.classList.remove("pointer-events-auto", "translate-y-0");
-      backToTopBtn.style.opacity = ""; // Clear inline style
+      backToTopBtn.style.opacity = "";
     }
   };
 
-  window.addEventListener("scroll", toggleBackToTop);
-  window.addEventListener("resize", toggleBackToTop);
-  setTimeout(toggleBackToTop, 200);
+  const onScroll = () => {
+    if (!ticking) {
+      window.requestAnimationFrame(updateBackToTop);
+      ticking = true;
+    }
+  };
+
+  const onResize = () => {
+    updateDimensions();
+    onScroll();
+  };
+
+  window.addEventListener("scroll", onScroll, { passive: true });
+  window.addEventListener("resize", onResize, { passive: true });
+  
+  // Initial check after paint
+  window.requestAnimationFrame(() => {
+    updateDimensions();
+    updateBackToTop();
+  });
 });
 
 /* ==========================================================================

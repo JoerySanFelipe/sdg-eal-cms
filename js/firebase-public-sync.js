@@ -10,6 +10,10 @@
 
   console.log(`[UCU Public Sync] Mode: ${isPreviewMode ? 'Live Preview (Iframe/New Tab)' : 'Public Production'}`);
 
+  // In-memory memoization cache for Firestore REST queries
+  const restDocCache = new Map();
+  const restCollectionCache = new Map();
+
   // Broadcast Channel setup for cross-tab synchronization
   let liveBroadcastChannel = null;
   if (typeof window.BroadcastChannel === 'function') {
@@ -1386,13 +1390,18 @@
   }
 
   async function fetchDoc(collectionName, docId) {
+    const cacheKey = `${collectionName}/${docId}`;
+    if (restDocCache.has(cacheKey)) return restDocCache.get(cacheKey);
+
     try {
       const res = await fetch(`https://firestore.googleapis.com/v1/projects/sdg-web-d07ac/databases/(default)/documents/${collectionName}/${docId}`);
       if (!res.ok) return null;
       const data = await res.json();
       if (!data || !data.fields) return null;
       const unwrapped = unwrapFirestoreFields(data.fields);
-      return unwrapped.data || unwrapped;
+      const result = unwrapped.data || unwrapped;
+      restDocCache.set(cacheKey, result);
+      return result;
     } catch (e) {
       console.warn(`[UCU Public Sync] Failed to fetch ${collectionName}/${docId}`, e);
       return null;
@@ -1400,18 +1409,22 @@
   }
 
   async function fetchCollection(collectionName) {
+    if (restCollectionCache.has(collectionName)) return restCollectionCache.get(collectionName);
+
     try {
       const res = await fetch(`https://firestore.googleapis.com/v1/projects/sdg-web-d07ac/databases/(default)/documents/${collectionName}?pageSize=500`);
       if (!res.ok) return [];
       const data = await res.json();
       if (!data || !data.documents) return [];
-      return data.documents.map(doc => {
+      const result = data.documents.map(doc => {
         const fields = unwrapFirestoreFields(doc.fields || {});
         return {
           id: doc.name.split('/').pop(),
           ...fields
         };
       });
+      restCollectionCache.set(collectionName, result);
+      return result;
     } catch (e) {
       console.warn(`[UCU Public Sync] Failed to fetch ${collectionName}`, e);
       return [];

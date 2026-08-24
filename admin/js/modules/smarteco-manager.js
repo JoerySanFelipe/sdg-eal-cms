@@ -1,8 +1,9 @@
 // admin/js/modules/smarteco-manager.js
 // Modular Feature Manager for Smart Eco Campus & UI GreenMetric (CMS Studio)
 
-import { cmsState, INDICATOR_PILLARS, compressAndEncodeImage } from '../cms-state.js';
+import { cmsState, compressAndEncodeImage } from '../cms-state.js';
 import { previewBridge } from '../preview-bridge.js';
+import { escapeHtml, resolveAssetUrl, INDICATOR_PILLARS } from '../shared-utils.js';
 
 const CANONICAL_MILESTONES = [
   { rank: "#1", label: "Local Universities & Colleges (LUC) in the Philippines", theme: "blue" },
@@ -19,25 +20,14 @@ export class SmartEcoManager {
    * Escape HTML utility
    */
   escape(str) {
-    if (!str && str !== 0) return '';
-    return String(str)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
+    return escapeHtml(str);
   }
 
   /**
    * Resolve image path for admin view
    */
   resolveAdminImageSrc(src) {
-    if (!src) return '';
-    if (src.startsWith('data:') || src.startsWith('http://') || src.startsWith('https://') || src.startsWith('blob:')) {
-      return src;
-    }
-    if (src.startsWith('../')) return src;
-    if (src.startsWith('./')) return `../${src.slice(2)}`;
-    return `../${src}`;
+    return resolveAssetUrl(src, { isAdmin: true });
   }
 
   /**

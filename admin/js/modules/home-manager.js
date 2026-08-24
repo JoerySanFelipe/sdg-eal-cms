@@ -4,30 +4,21 @@
 import { cmsState, compressAndEncodeImage, pickImageFileFromSystem } from '../cms-state.js';
 import { previewBridge } from '../preview-bridge.js';
 import { lucideIconPicker } from '../lucide-icon-picker.js';
+import { escapeHtml, resolveAssetUrl } from '../shared-utils.js';
 
 export class HomeManager {
   /**
    * Escape HTML utility
    */
   escape(str) {
-    if (!str && str !== 0) return '';
-    return String(str)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
+    return escapeHtml(str);
   }
 
   /**
    * Resolve media image paths for Admin context
    */
   resolveAdminImageSrc(src) {
-    if (!src) return '';
-    if (src.startsWith('data:') || src.startsWith('http://') || src.startsWith('https://')) return src;
-    if (src.startsWith('../')) return src;
-    if (src.startsWith('./')) return `../${src.slice(2)}`;
-    if (src.startsWith('/')) return `..${src}`;
-    return `../${src}`;
+    return resolveAssetUrl(src, { isAdmin: true });
   }
 
   /**

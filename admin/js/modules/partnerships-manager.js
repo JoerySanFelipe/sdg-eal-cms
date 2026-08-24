@@ -4,6 +4,7 @@
 import { cmsState } from '../cms-state.js';
 import { previewBridge } from '../preview-bridge.js';
 import { lucideIconPicker } from '../lucide-icon-picker.js';
+import { escapeHtml, resolveAssetUrl } from '../shared-utils.js';
 
 const defaultPartnerMetricDefs = [
   {
@@ -68,25 +69,14 @@ export class PartnershipsManager {
    * Escape HTML utility
    */
   escape(str) {
-    if (!str && str !== 0) return '';
-    return String(str)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
+    return escapeHtml(str);
   }
 
   /**
    * Resolve logo path for Admin Studio context
    */
   resolveLogoSrc(src) {
-    if (!src) return '';
-    if (src.startsWith('data:') || src.startsWith('http://') || src.startsWith('https://') || src.startsWith('blob:')) {
-      return src;
-    }
-    if (src.startsWith('../')) return src;
-    if (src.startsWith('./')) return '../' + src.slice(2);
-    return '../' + src;
+    return resolveAssetUrl(src, { isAdmin: true });
   }
 
   /**

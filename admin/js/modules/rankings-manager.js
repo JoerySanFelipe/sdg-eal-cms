@@ -3,6 +3,7 @@
 
 import { cmsState } from '../cms-state.js';
 import { previewBridge } from '../preview-bridge.js';
+import { escapeHtml, resolveAssetUrl } from '../shared-utils.js';
 
 export class RankingsManager {
   constructor() {
@@ -16,25 +17,14 @@ export class RankingsManager {
    * Escape HTML utility
    */
   escape(str) {
-    if (!str && str !== 0) return '';
-    return String(str)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
+    return escapeHtml(str);
   }
 
   /**
    * Resolve media image paths for Admin Studio context
    */
   resolveAdminImageSrc(src) {
-    if (!src) return '';
-    if (src.startsWith('data:') || src.startsWith('http://') || src.startsWith('https://') || src.startsWith('blob:')) {
-      return src;
-    }
-    if (src.startsWith('../')) return src;
-    if (src.startsWith('./')) return `../${src.slice(2)}`;
-    return `../${src}`;
+    return resolveAssetUrl(src, { isAdmin: true });
   }
 
   /**

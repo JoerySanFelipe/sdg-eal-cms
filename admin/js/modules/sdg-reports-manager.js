@@ -2,34 +2,25 @@
 // Modular Feature Manager for 17 SDG Narrative Reports (CMS Studio)
 // Dual-Zone Page-Level CMS Block Editor (Zone 1: Overview Blocks, Zone 2: Impact Drawers)
 
-import { cmsState, SDG_METADATA, compressAndEncodeImage, pickImageFileFromSystem, getAvailableYears, addAvailableYear, removeAvailableYear, getDefaultYear } from '../cms-state.js';
+import { cmsState, compressAndEncodeImage, pickImageFileFromSystem, getAvailableYears, addAvailableYear, removeAvailableYear, getDefaultYear } from '../cms-state.js';
 import { previewBridge } from '../preview-bridge.js';
 import { universalBlockEditor } from '../universal-block-editor.js';
 import { lucideIconPicker } from '../lucide-icon-picker.js';
+import { escapeHtml, resolveAssetUrl, SDG_METADATA } from '../shared-utils.js';
 
 export class SdgReportsManager {
   /**
    * Escape HTML utility
    */
   escape(str) {
-    if (!str && str !== 0) return '';
-    return String(str)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
+    return escapeHtml(str);
   }
 
   /**
    * Resolve media image paths for Admin context
    */
   resolveAdminImageSrc(src) {
-    if (!src) return '';
-    if (src.startsWith('data:') || src.startsWith('http://') || src.startsWith('https://')) return src;
-    if (src.startsWith('../')) return src;
-    if (src.startsWith('./')) return `../${src.slice(2)}`;
-    if (src.startsWith('/')) return `..${src}`;
-    return `../${src}`;
+    return resolveAssetUrl(src, { isAdmin: true });
   }
 
   /**

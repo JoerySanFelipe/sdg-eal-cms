@@ -1,9 +1,10 @@
 // admin/js/modules/indicators-manager.js
 // Modular Feature Manager for 7 UI GreenMetric Indicator Pillars & Evidence Registry (CMS Studio)
 
-import { cmsState, INDICATOR_PILLARS, compressAndEncodeImage } from '../cms-state.js';
+import { cmsState, compressAndEncodeImage } from '../cms-state.js';
 import { previewBridge } from '../preview-bridge.js';
 import { lucideIconPicker } from '../lucide-icon-picker.js';
+import { escapeHtml, resolveAssetUrl, INDICATOR_PILLARS, SDG_METADATA, naturalSort } from '../shared-utils.js';
 
 export class IndicatorsManager {
   constructor() {
@@ -15,48 +16,25 @@ export class IndicatorsManager {
    * Escape HTML utility
    */
   escape(str) {
-    if (!str && str !== 0) return '';
-    return String(str)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
+    return escapeHtml(str);
   }
 
   /**
    * Resolve image path for admin view
    */
   resolveAdminImageSrc(src) {
-    if (!src) return '';
-    if (src.startsWith('data:') || src.startsWith('http://') || src.startsWith('https://') || src.startsWith('blob:')) {
-      return src;
-    }
-    if (src.startsWith('../')) return src;
-    if (src.startsWith('./')) return `../${src.slice(2)}`;
-    return `../${src}`;
+    return resolveAssetUrl(src, { isAdmin: true });
   }
 
   /**
    * SDG official metadata helper
    */
   getSdgColor(num) {
-    const colors = [
-      '#E5243B', '#DDA63A', '#4C9F38', '#C5192D', '#FF3A21', 
-      '#26BDE2', '#FCC30B', '#A21942', '#FD6925', '#DD1367', 
-      '#FD9D24', '#BF8B2E', '#3F7E44', '#0A97D9', '#56C02B', 
-      '#00689D', '#19486A'
-    ];
-    return colors[num - 1] || '#24305e';
+    return SDG_METADATA[num]?.color || '#24305e';
   }
 
   getSdgTitle(num) {
-    const titles = [
-      "No Poverty", "Zero Hunger", "Good Health", "Quality Education", "Gender Equality",
-      "Clean Water", "Affordable Energy", "Decent Work", "Industry & Innovation", "Reduced Inequalities",
-      "Sustainable Cities", "Responsible Consumption", "Climate Action", "Life Below Water", "Life on Land",
-      "Peace & Justice", "Partnerships"
-    ];
-    return titles[num - 1] || `SDG ${num}`;
+    return SDG_METADATA[num]?.title || `SDG ${num}`;
   }
 
   /**

@@ -119,10 +119,12 @@ class PreviewBridge {
 
   /**
    * Send live draft changes to preview iframe, external tabs, and BroadcastChannel
+   * Fast In-Memory Path (50ms) + Quota-Safe Background Disk Persistence (1,000ms)
    */
   sendLiveUpdate(draftData) {
     if (!draftData) return;
 
+    // 1. FAST PATH (50ms): Direct In-Memory Inter-Window Dispatch (Zero Disk I/O, Zero Main-Thread Blocking)
     clearTimeout(this.debounceTimer);
     this.debounceTimer = setTimeout(() => {
       try {
@@ -133,17 +135,17 @@ class PreviewBridge {
           timestamp: Date.now()
         };
 
-        // 1. Internal split-screen iframe
+        // Internal split-screen iframe
         if (this.iframe && this.iframe.contentWindow) {
           this.iframe.contentWindow.postMessage(message, '*');
         }
 
-        // 2. BroadcastChannel across all browser tabs
+        // BroadcastChannel across all browser tabs
         if (this.broadcastChannel) {
           this.broadcastChannel.postMessage(message);
         }
 
-        // 3. Tracked external window references
+        // Tracked external window references
         this.openedTabs.forEach(tab => {
           if (tab && !tab.closed) {
             try {
@@ -154,18 +156,30 @@ class PreviewBridge {
           }
         });
 
-        // 4. LocalStorage draft mirror for instant hydration when tabs open
-        try {
-          localStorage.setItem('UCU_CMS_ACTIVE_PREVIEW_DRAFT', JSON.stringify(message));
-          const docKey = cmsState.getDocKey();
-          localStorage.setItem(`UCU_DRAFT_${docKey}`, JSON.stringify(draftData));
-        } catch (e) {}
-
         this.notifyListeners({ status: 'synced', timestamp: Date.now() });
       } catch (err) {
-        console.warn("[Preview Bridge] postMessage dispatch failed:", err);
+        console.warn("[Preview Bridge] In-memory postMessage dispatch failed:", err);
       }
-    }, 50); // Fast 50ms debounce for ultra-smooth typing response
+    }, 50);
+
+    // 2. SLOW PATH (1000ms): Quota-Safe Background LocalStorage Persistence
+    clearTimeout(this._storageDebounceTimer);
+    this._storageDebounceTimer = setTimeout(() => {
+      try {
+        const message = {
+          type: 'UCU_CMS_LIVE_PREVIEW',
+          section: cmsState.activeSection,
+          data: draftData,
+          timestamp: Date.now()
+        };
+        localStorage.setItem('UCU_CMS_ACTIVE_PREVIEW_DRAFT', JSON.stringify(message));
+        const docKey = cmsState.getDocKey();
+        localStorage.setItem(`UCU_DRAFT_${docKey}`, JSON.stringify(draftData));
+      } catch (e) {
+        // Quota safety: Catch QuotaExceededError silently without breaking the UI
+        console.warn("[Preview Bridge] Background draft persistence deferred:", e.message);
+      }
+    }, 1000);
   }
 
   /**
