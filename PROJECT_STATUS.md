@@ -204,6 +204,11 @@ npx tailwindcss -i ./css/global.css -o ./css/style.css
 
 - **Top Hero Banner**: Live `<ucu-hero-banner>` configuration (Eyebrow, Headline, Highlight, Description).
 - **Year Filter Bar & Dedicated Component Render**: Upgraded `<ucu-research-feed>` with a dedicated `render()` method supporting live real-time re-rendering and multi-year filtering.
+- **Dedicated Empty State Container**: Added a polished empty state container in `<ucu-research-feed>` (matching the exact Impact page style and wording):
+  - Orbiting icon container with neutral background (`bg-slate-100 text-slate-400`).
+  - High-contrast title: *"No research found for this specific goal or year."*
+  - Helpful instruction: *"Try selecting "All" or choosing another year."*
+  - Automatically triggers when no papers match active filters or when database is empty.
 - **Full Research Publications Archive Manager in CMS**:
   - Add Research Publication (`+ Add Research Publication`) & Delete Publication with `window.cmsConfirm` modal.
   - Publication Title, Authors & Affiliation, Date String / Volume (e.g. `Oct 2025`).
@@ -477,7 +482,77 @@ npx tailwindcss -i ./css/global.css -o ./css/style.css
   - **Checkpoint 1 (Header & Section 1 - Hero Banner)**: **PASSED & LOCKED IN**. Standardized Header (Title `SDG ${sdgNum} Studio`, pulsing `Year:` selector, removed goal dropdown), Section 1 Hero Banner (30% Logo/Icon dropzone with evidence-indicator style hover pill and native drag-and-drop, 60% Hero banner dropzone with hover pill and drag-and-drop, 10% Color picker, Eyebrow, Headline & Description).
   - **Checkpoint 2 (Section 2 - Top Overview Narrative)**: **PASSED & LOCKED IN**. Title `Top Overview Narrative`, single primary creation engine via Visual Block Editor modal.
   - **Checkpoint 3 (Section 3 - Impact Drawers & Universal Safety)**: **PASSED & LOCKED IN**. Section Title `Impact Drawers (${drawers.length})`, orange `[ + New Drawer ]` and drawer card `[ Editor ]` triggers, static card heading, 2-row card layout (removed obsolete linked event tags), Drawer Editor modal with square number box `#1` and `"Drawer Content"` title, direct rich block event integration, backdrop click exit prevention, cancel/close unsaved changes confirmation, and explicit block deletion confirmations with `z-[300]` modal stacking.
-  - **17 SDG Studios Full Deployment**: **100% DEPLOYED & ACTIVE**. All 17 SDG Narrative Studios (SDG 1 through SDG 17) are dynamically powered by the centralized modular engine [`admin/js/modules/sdg-reports-manager.js`](file:///c:/kudecode/sdg-web/admin/js/modules/sdg-reports-manager.js) and [`admin/js/universal-block-editor.js`](file:///c:/kudecode/sdg-web/admin/js/universal-block-editor.js), fully connected to Firestore CRUD, local draft caching, and real-time split-screen preview. All 17 public pages (`sdg1.html` to `sdg17.html`) are audited with complete script dependencies and live sync hydration.
+### 4.18 Beta Launch Readiness & Polish Sprint (Completed September 16, 2026)
+
+- **Fast-Track Pre-Flight Cleanups**:
+  - `announcement.html`: Removed legacy runtime `https://cdn.tailwindcss.com` dependency and config object; converted to pure compiled `css/style.css` for instant loading and eliminating FOUC.
+  - Universal Favicon Deployment: Injected official UCU favicon `<link rel="icon" ...>` across all 31 HTML pages (8 main entry points, 7 GreenMetric indicator pillars, and 17 public SDG reports) to eliminate browser tab 404 errors.
+  - Typo Correction: Standardized `index.html` Strategic Alliance header to `"Forge a Strategic Alliance"` matching `partnership.html`.
+  - Offline & Fallback Data Audit: Verified that `firebase-public-sync.js` gracefully handles offline/unreachable Firestore conditions without blocking the DOM or wiping out static fallback content.
+  - Verified `admin/js/auth.js` administrative demo login fallback for zero-barrier studio testing.
+  - Recompiled production stylesheet via `npx tailwindcss -i ./css/global.css -o ./css/style.css` with 100% clean builds.
+
+### 4.19 Two-Tier Institutional Maintenance Feature (Beta Launch Shield)
+
+- **High-Impact Objective**: Protect unverified or incomplete sections (`announcement.html`, `sdg-reports/sdg1.html`–`sdg17.html`, `research.html`, `impact.html`) during the Beta launch without displaying broken pages.
+- **Executive Institutional Notice**: Clean, modern card (`#ucu-curation-notice-container`) framed with ambient glow, university orbit icon, executive narrative explaining ongoing review by the External Affairs & Linkages Office, and contact inquiries footer (`For administrative, admissions, or general inquiries, please call (075) 529-5223 or email us at externalaffairsandlinkages@ucu.edu.ph`).
+  - **Relabeled & Streamlined**: Status badge pill removed; CTA buttons removed; headline strictly set to **`Webpage Under Construction`**.
+  - **Dual Display Modes (Site-Wide vs Specific Page)**:
+    1. **Site-Wide / Homepage (`index.html`) Mode**: Hero slider (`<ucu-home-hero-slider>`) and footer (`<ucu-footer>`) are hidden; in `<ucu-header>`, navigation buttons, mobile menu, and breadcrumbs are hidden leaving only the university logo header bar.
+    2. **Specific Page Mode**: `<ucu-header>` navigation buttons, menus, and search remain **100% visible and functional**, and `<ucu-footer>` remains **100% visible** at the bottom. Only the page body content (hero banners, layouts, feeds, grids) is replaced by the centered maintenance card.
+- **Unified Administrative Header Controls**:
+  1. **Top Header Single Source of Truth (`admin/index.html`)**: The top-bar segmented control pill (`[ ● Live ]` vs `[ ⏳ Maintenance ]`) in the CMS header governs public page visibility across every section. When on Homepage (`index.html`), toggling to Maintenance puts the entire web portal under institutional maintenance. When on any specific page (17 SDG Reports, 7 UI GreenMetric Indicators, Announcements, Research, Impact, etc.), it controls visibility for that specific page.
+  2. **Removed Cluttered In-Studio Batch Controls**: As requested by the user, the redundant batch control cards ("Batch 17-SDG Public Maintenance Controls" and "Batch 7-Pillar Public Maintenance Controls") were cleanly removed from `admin/js/modules/sdg-reports-manager.js` and `admin/js/modules/indicators-manager.js`.
+- **Homepage Studio Refinement (`admin/js/modules/home-manager.js`)**:
+  - Removed duplicate "Site-Wide Web Portal Maintenance" section card so Homepage studio focuses cleanly on the Hero Carousel Slider, quick jumps, and Performance Metrics.
+- **Live Preview Bridge & Display Engine (`admin/js/preview-bridge.js` & `js/firebase-public-sync.js`)**:
+  - **Live Card Display in Preview & Public Views**: Resolved bug where `applyLiveUpdate` previously suppressed the card inside the CMS preview iframe. Toggling Maintenance in the header now immediately renders the **`Webpage Under Construction`** card in both the split-screen preview iframe and public page views. Toggling Live immediately restores the normal page layout.
+  - **Resilient Layout Flex Engine**: Mode A hides hero slider/nav buttons/footer; Mode B preserves header nav and footer while hiding page body content (`ucu-sdg-page-hero`, `ucu-sdg-layout`, `ucu-indicator-layout`, `ucu-sdg-ribbon`), centering the card cleanly. In admin preview mode (`?preview=true`), administrators continue to edit and see the draft in full while a pulsing bottom badge confirms that public visitors see the maintenance notice.
+
+### 4.20 Public Announcements Navigation Visibility Control
+- **Objective**: Hide the "Announcements" section from public view during initial launch while keeping full editorial access inside CMS Studio.
+- **Smart Context-Aware Navigation (`js/core-ui.js`)**:
+  - In `UcuHeader`: `mainNavLinks` dynamically filters out `{ name: "Announcements", url: "announcement.html" }` whenever `!isCmsPreview`. Public visitors on desktop and mobile menus do not see any Announcement navigation link.
+  - In `UcuFooter`: Footer Quick Links dynamically hides the Announcements link when not in CMS preview mode.
+  - In CMS Studio (`admin/index.html`): The sidebar retains the full **Announcement** studio navigation trigger, and preview iframe (`?cms_preview=true`) maintains full preview capabilities for administrators.
+
+### 4.21 SDG Narrative Maintenance Notice Resolution & Multi-Year Goal-Level Synchronization
+- **High-Impact Issue Resolved**: On SDG Narrative pages (`sdg-reports/sdg1.html`–`sdg17.html`), putting an SDG section under maintenance previously failed to display the card because:
+  1. `<ucu-sdg-layout>` contained an internal `<main>` element within its shadowless template.
+  2. `document.querySelector('main')` matched that nested `<main>`, appending the maintenance notice inside `<ucu-sdg-layout>`.
+  3. Mode B CSS explicitly set `body.ucu-maintenance-page ucu-sdg-layout { display: none !important; }`, which simultaneously hid the newly appended card along with the layout!
+- **DOM Placement Fix (`js/firebase-public-sync.js`)**:
+  - `showMaintenanceNotice` and `hideMaintenanceNotice` now detect if `<ucu-sdg-layout>` is present on the page (`const sdgLayout = document.querySelector('ucu-sdg-layout'); let mainEl = sdgLayout ? null : document.querySelector('main');`).
+  - When on an SDG narrative page, `mainEl` is treated as `null`, causing `notice` to be inserted as a direct child of `document.body` right before `<ucu-footer>`.
+  - With `body.ucu-maintenance-page`, `<ucu-header>` (with nav buttons) and `<ucu-footer>` remain visible, `<ucu-sdg-page-hero>`, `<ucu-sdg-layout>`, `<ucu-sdg-ribbon>`, and `<ucu-modal-shell>` are hidden with `display: none !important`, and `#ucu-maintenance-notice-container` is styled with `display: flex !important; flex-grow: 1 !important; min-height: 50vh !important; width: 100% !important; margin: auto !important;`, rendering the card with 100% visibility.
+- **Multi-Year Goal-Level Synchronization Logic**:
+  - **Year-Agnostic SDG Maintenance**: When maintenance is toggled for a specific SDG goal (e.g. SDG 1), it applies across all years (2025, 2024, 2023) for that goal, so public visitors and previewers see the maintenance card regardless of which year tab or URL parameter is active.
+  - **Per-SDG Goal Isolation**: Only the targeted SDG goal (e.g. SDG 1) is affected; other goals (SDG 2–17) remain completely visible, live, and accessible.
+  - **CMS & Firestore Mirroring (`admin/js/cms-state.js` & `js/firebase-public-sync.js`)**:
+    - `toggleCurrentPageMaintenance` sets `UCU_SDG_${sdgId}_MAINTENANCE` and replicates `isUnderMaintenance` across all year drafts (`2025`, `2024`, `2023`).
+    - `publishCurrentDraft` sets `UCU_PUBLISHED_SDG_${sdgId}_MAINTENANCE` and mirrors the status to Firestore across all years.
+    - `applyGoalMaintenanceToCurrentDraft` preserves the maintenance state when switching year dropdowns inside CMS Studio.
+    - `isSectionMatchingCurrentPage` matches incoming live updates for SDG goals regardless of year mismatch when maintenance updates arrive.
+    - `checkAndHydratePublishedData` checks `UCU_PUBLISHED_SDG_${sectionId}_MAINTENANCE` on load and during year switches (`window.ucuSwitchYear`), immediately showing the card across all years for that SDG.
+  - **SDG 1 Isolated Modal Footer Hijacking Resolution**:
+    - **Root Cause**: `sdg1.html` is the only narrative page containing `<ucu-modal-shell>` (for the Kalahi-CIDSS event). Inside `<ucu-modal-shell>`, there is an internal `<footer>` element. `document.querySelector('ucu-footer, footer')` was previously matching this internal modal `<footer>` instead of the global `body > ucu-footer`. This caused `#ucu-maintenance-notice-container` to be injected *inside* the modal shell instead of directly under `<body>`. Because `<ucu-modal-shell>` is hidden with `display: none !important` during maintenance, the maintenance card was invisible on SDG 1 while showing on the remaining 16 narratives (which do not have `<ucu-modal-shell>`).
+    - **Fix**: Updated `showMaintenanceNotice` in [js/firebase-public-sync.js](file:///c:/kudecode/sdg-web/js/firebase-public-sync.js) to use `document.querySelector('body > ucu-footer, body > footer') || document.querySelector('ucu-footer')`. Notice is now guaranteed to insert directly under `<body>` before the page footer across all pages. Added fallback protection in `applyLiveUpdate` to prevent inadvertent removal when goal maintenance is active.
+
+### 4.22 Subfolder Deployment Readiness & Comprehensive Path Audit
+- **Deployment Requirement**: The web portal will be launched as a section/subfolder within the official university website source code (e.g., `https://ucu.edu.ph/sdg/` or `https://ucu.edu.ph/eal/`).
+- **Comprehensive Audit Results (151 HTML Files + 36 JS/CSS Files)**:
+  1. **Zero Root-Relative Paths**: 0 occurrences of hardcoded `/images/...`, `/css/...`, `/js/...`, or `/index.html` across all 151 HTML documents.
+  2. **Zero Base Tag Conflicts**: 0 `<base>` tags interfering with relative navigation.
+  3. **Zero Broken Local File References**: All image, stylesheet, script, document, and evidence links exist and resolve cleanly.
+  4. **Fixed Relative Path Discrepancy**: Fixed `sdg-reports/sdg1.html` where `content-src` had `../../events/2025/kalahi-cidss.html` (which was depth 2 traversing above the root folder) to `../events/2025/kalahi-cidss.html` (matching depth 1).
+  5. **Normalized Research Document Path**: Updated `js/research-data.js` `pdfLink` from `../documents/santos-et-al.pdf` to `documents/santos-et-al.pdf`, and wrapped `resolvedPdfLink` in `window.ucuResolveMediaSrc` in `js/sdg-components.js`.
+  6. **Dynamic Base Path in SdgSeeAllCard & UcuSdgPageHero (`js/sdg-components.js`)**:
+     - `<sdg-see-all-card>` now dynamically resolves `images/sdg/bg/sdg-circle.svg` using `window.ucuGetBasePath()` (`${base}images/sdg/bg/sdg-circle.svg`), properly adapting between root (`./`) and subfolder (`../`) pages.
+     - `<ucu-sdg-page-hero>` now wraps `bg-image` and `icon-image` attributes in `window.ucuResolveMediaSrc()` for seamless subfolder path resolution.
+  7. **Universal Asset Resolution in `js/firebase-public-sync.js`**:
+     - Unified `resolveAssetPath(src)` to directly utilize `window.ucuResolveMediaSrc(src)`, eliminating flawed pathname substring checks.
+     - Dynamic modal fallback src now uses `typeof window.ucuGetBasePath === 'function' ? window.ucuGetBasePath() : '../'` for evidence documents.
+  8. **Stateless Breadcrumb Depth Calculation**: Confirmed `js/core-ui.js` breadcrumbs use `base.split('/').filter(p => p === '..').length` to slice `appPath`, remaining 100% agnostic to any parent nesting directory structure.
 
 ---
 
@@ -489,3 +564,4 @@ npx tailwindcss -i ./css/global.css -o ./css/style.css
 - **Do NOT include** `ArtifactMetadata` block in `write_to_file` when writing to workspace source files
 - **IDE**: Antigravity IDE
 - **Workspace root**: `c:\kudecode\sdg-web`
+

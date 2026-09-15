@@ -128,7 +128,18 @@
 
       <!-- Right Controls & Actions -->
       <div class="flex items-center gap-2 sm:gap-3">
-        
+        <!-- Segmented Public Page Visibility Control (Live vs Maintenance) -->
+        <div class="hidden sm:flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200 text-xs font-semibold select-none shadow-2xs" id="page-visibility-control">
+          <button type="button" id="btn-vis-live" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-[11px] transition-all cursor-pointer bg-white text-emerald-700 shadow-2xs" title="Page is publicly visible to all visitors">
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <span>Live</span>
+          </button>
+          <button type="button" id="btn-vis-curating" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-[11px] transition-all cursor-pointer text-slate-500 hover:text-slate-800" title="Display institutional 'Under Maintenance' notice to public visitors">
+            <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+            <span>Maintenance</span>
+          </button>
+        </div>
+
         <!-- Discard Action (Red Button) -->
         <button type="button" id="btn-revert-draft" class="hidden sm:inline-flex px-3.5 py-2 text-xs font-bold rounded-xl text-red-600 hover:bg-red-50 border border-red-200 transition-colors cursor-pointer">
           Discard
@@ -605,7 +616,19 @@
         dirtyBadge.classList.add('hidden');
       }
 
-      // (URL display removed from UI)
+      // Update Public Visibility Control (Live vs Curating)
+      const isCurating = !!(cmsState.currentDraft && (cmsState.currentDraft.isCurating || cmsState.currentDraft.isUnderMaintenance));
+      const btnVisLive = document.getElementById('btn-vis-live');
+      const btnVisCurating = document.getElementById('btn-vis-curating');
+      if (btnVisLive && btnVisCurating) {
+        if (isCurating) {
+          btnVisCurating.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-[11px] transition-all cursor-pointer bg-amber-500 text-slate-950 shadow-xs ring-2 ring-amber-400/40';
+          btnVisLive.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-[11px] transition-all cursor-pointer text-slate-500 hover:text-slate-800';
+        } else {
+          btnVisLive.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-[11px] transition-all cursor-pointer bg-white text-emerald-700 shadow-2xs ring-1 ring-emerald-500/30';
+          btnVisCurating.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-[11px] transition-all cursor-pointer text-slate-500 hover:text-slate-800';
+        }
+      }
     }
 
     // Main Navigation Handler
@@ -712,6 +735,24 @@
         await logout();
       }
     });
+
+    // Public Page Visibility Controls (Live vs Maintenance)
+    const btnVisLive = document.getElementById('btn-vis-live');
+    const btnVisCurating = document.getElementById('btn-vis-curating');
+    if (btnVisLive) {
+      btnVisLive.addEventListener('click', () => {
+        cmsState.toggleCurrentPageMaintenance(false);
+        updateActiveNavUI();
+        showToast("Page set to LIVE (Visible to public)", "🟢");
+      });
+    }
+    if (btnVisCurating) {
+      btnVisCurating.addEventListener('click', () => {
+        cmsState.toggleCurrentPageMaintenance(true);
+        updateActiveNavUI();
+        showToast("Page set to UNDER MAINTENANCE", "⏳");
+      });
+    }
 
     // SDG Box Dynamic Hover Color Handlers
     document.addEventListener('mouseover', (e) => {

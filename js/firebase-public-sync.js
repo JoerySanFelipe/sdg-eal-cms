@@ -35,21 +35,18 @@
 
   function resolveAssetPath(src) {
     if (!src) return '';
-    if (src.startsWith('data:') || src.startsWith('http://') || src.startsWith('https://') || src.startsWith('blob:')) {
+    if (typeof window.ucuResolveMediaSrc === 'function') {
+      return window.ucuResolveMediaSrc(src);
+    }
+    if (src.startsWith('data:') || src.startsWith('http://') || src.startsWith('https://') || src.startsWith('blob:') || src.startsWith('//')) {
       return src;
     }
-    const isSubfolder = window.location.pathname.includes('/indicators/') || window.location.pathname.includes('/evidence/');
-    if (isSubfolder) {
-      if (src.startsWith('../')) return src;
-      if (src.startsWith('./')) return `../${src.slice(2)}`;
-      if (src.startsWith('/')) return `..${src}`;
-      return `../${src}`;
-    } else {
-      if (src.startsWith('../')) return src.slice(3);
-      if (src.startsWith('./')) return src.slice(2);
-      if (src.startsWith('/')) return src.slice(1);
-      return src;
-    }
+    const basePath = (typeof window.ucuGetBasePath === 'function') ? window.ucuGetBasePath() : './';
+    let clean = src;
+    while (clean.startsWith('../')) clean = clean.substring(3);
+    if (clean.startsWith('./')) clean = clean.substring(2);
+    if (clean.startsWith('/')) clean = clean.substring(1);
+    return `${basePath}${clean}`;
   }
 
   function getCurrentPageSection() {
@@ -74,7 +71,21 @@
     if (indicatorEl) {
       sectionType = 'indicator';
       const indMatch = path.match(/indicators\/([^.]+)\.html/i);
-      sectionId = indMatch ? indMatch[1] : (indicatorEl.getAttribute('indicator') || '');
+      if (indMatch) {
+        sectionId = indMatch[1].toLowerCase();
+      } else {
+        const numMap = {
+          '01': 'infrastructure',
+          '02': 'energy',
+          '03': 'waste',
+          '04': 'water',
+          '05': 'transportation',
+          '06': 'education',
+          '07': 'digitalization'
+        };
+        const activeNum = indicatorEl.getAttribute('active-num');
+        sectionId = numMap[activeNum] || (indicatorEl.getAttribute('indicator') || '').toLowerCase();
+      }
       return { type: sectionType, id: sectionId, year: sectionYear };
     }
 
@@ -116,19 +127,29 @@
     return { type: sectionType, id: sectionId, year: sectionYear };
   }
 
-  function isSectionMatchingCurrentPage(section) {
+  function isSectionMatchingCurrentPage(section, data) {
     if (!section) return false;
     const current = getCurrentPageSection();
     if (section.type !== current.type) return false;
-    if (current.id && section.id && current.id !== section.id) return false;
-    if (current.type === 'sdg' && (section.year || '2025') !== (current.year || '2025')) return false;
+    if (current.id && section.id && String(current.id).toLowerCase() !== String(section.id).toLowerCase()) return false;
+    
+    // For SDG narratives: maintenance status applies across all years for this specific SDG goal
+    const isMaintenanceUpdate = data && (data.isUnderMaintenance !== undefined || data.isCurating !== undefined || data.isGlobalMaintenance !== undefined);
+    if (current.type === 'sdg') {
+      if (isMaintenanceUpdate) {
+        // Goal ID already matched above! Maintenance applies across all years for this SDG.
+        return true;
+      }
+      if (String(section.year || '2025') !== String(current.year || '2025')) return false;
+      return true;
+    }
     return true;
   }
 
   function handleLiveMessage(msg) {
     if (!msg || typeof msg !== 'object' || msg.type !== 'UCU_CMS_LIVE_PREVIEW') return;
     const { section, data } = msg;
-    if (!data || !isSectionMatchingCurrentPage(section)) return;
+    if (!data || !isSectionMatchingCurrentPage(section, data)) return;
     applyLiveUpdate(section, data);
   }
 
@@ -186,12 +207,29 @@
         const storedActive = localStorage.getItem('UCU_CMS_ACTIVE_PREVIEW_DRAFT');
         if (storedActive) {
           const msg = JSON.parse(storedActive);
-          if (msg && msg.section && msg.data && isSectionMatchingCurrentPage(msg.section)) {
+          if (msg && msg.section && msg.data && isSectionMatchingCurrentPage(msg.section, msg.data)) {
             applyLiveUpdate(msg.section, msg.data);
             applied = true;
           }
         }
       } catch (e) {}
+
+      // Check goal-level preview maintenance draft for SDG
+      const currentSection = getCurrentPageSection();
+      if (currentSection.type === 'sdg') {
+        const goalDraftMaint = localStorage.getItem(`UCU_SDG_${currentSection.id}_MAINTENANCE`);
+        if (goalDraftMaint === 'true') {
+          showMaintenanceNotice({
+            maintenanceTitle: 'Webpage Under Construction',
+            maintenanceMessage: 'The External Affairs and Linkages Office is currently updating and maintaining verified institutional records and publications for this section. Verified content will be available shortly. Thank you for your patience.'
+          });
+          updatePreviewMaintenanceBadge(true);
+          applied = true;
+        } else if (goalDraftMaint === 'false') {
+          hideMaintenanceNotice();
+          updatePreviewMaintenanceBadge(false);
+        }
+      }
 
       // If no active matching draft applied, fall back to published data
       if (!applied) {
@@ -216,12 +254,273 @@
     }
   }
 
+  /* ==========================================================================
+     INSTITUTIONAL MAINTENANCE & VISIBILITY NOTICE ENGINE
+     ========================================================================== */
+
+  function updatePreviewMaintenanceBadge(isMaintenance) {
+    let badge = document.getElementById('preview-maintenance-badge');
+    if (isMaintenance) {
+      if (!badge) {
+        badge = document.createElement('div');
+        badge.id = 'preview-maintenance-badge';
+        badge.className = 'fixed bottom-4 right-4 z-[9999] bg-amber-500 text-slate-950 font-black text-xs px-4 py-2 rounded-full shadow-2xl border-2 border-white/60 flex items-center gap-2 pointer-events-none select-none animate-bounce';
+        badge.innerHTML = `
+          <span class="w-2 h-2 rounded-full bg-slate-950 animate-ping"></span>
+          <span>⏳ Public View: Maintenance Notice Active</span>
+        `;
+        document.body.appendChild(badge);
+      }
+    } else {
+      if (badge) badge.remove();
+    }
+  }
+
+  function showMaintenanceNotice(options = {}) {
+    const currentSection = getCurrentPageSection();
+    const isSiteWideOrHome = !!(options.isSiteWide || currentSection.type === 'home');
+
+    let notice = document.getElementById('ucu-maintenance-notice-container') || document.getElementById('ucu-curation-notice-container');
+    let title = options.maintenanceTitle || options.curationTitle || 'Webpage Under Construction';
+    if (!title || title.includes('Curation') || title.includes('Institutional Web Page Under Maintenance') || title.includes('Website Under Construction')) {
+      title = 'Webpage Under Construction';
+    }
+    const message = options.maintenanceMessage || options.curationMessage || 'The External Affairs and Linkages Office is currently updating and maintaining verified institutional records and publications for this section. Verified content will be available shortly. Thank you for your patience.';
+
+    // 1. Activate body classes for global CSS control
+    document.body.classList.add('ucu-maintenance-active');
+    if (isSiteWideOrHome) {
+      document.body.classList.add('ucu-maintenance-sitewide');
+      document.body.classList.remove('ucu-maintenance-page');
+    } else {
+      document.body.classList.add('ucu-maintenance-page');
+      document.body.classList.remove('ucu-maintenance-sitewide');
+    }
+
+    // 2. Inject bulletproof maintenance stylesheet
+    let maintenanceStyle = document.getElementById('ucu-maintenance-style');
+    if (!maintenanceStyle) {
+      maintenanceStyle = document.createElement('style');
+      maintenanceStyle.id = 'ucu-maintenance-style';
+      document.head.appendChild(maintenanceStyle);
+    }
+
+    maintenanceStyle.textContent = `
+      /* Mode A: Site-Wide or Homepage Maintenance (Hides Hero Slider, Nav Buttons, and Footer) */
+      body.ucu-maintenance-sitewide ucu-home-hero-slider,
+      body.ucu-maintenance-sitewide .ucu-hero-slider-container,
+      body.ucu-maintenance-sitewide ucu-hero-banner,
+      body.ucu-maintenance-sitewide ucu-sdg-page-hero,
+      body.ucu-maintenance-sitewide ucu-sdg-layout,
+      body.ucu-maintenance-sitewide ucu-indicator-layout,
+      body.ucu-maintenance-sitewide ucu-sdg-ribbon,
+      body.ucu-maintenance-sitewide ucu-footer,
+      body.ucu-maintenance-sitewide footer,
+      body.ucu-maintenance-sitewide ucu-header nav,
+      body.ucu-maintenance-sitewide ucu-header #mobile-menu-btn,
+      body.ucu-maintenance-sitewide ucu-header #mobile-menu,
+      body.ucu-maintenance-sitewide ucu-header .scrollbar-hide,
+      body.ucu-maintenance-sitewide ucu-header [class*="bg-black/20"] {
+        display: none !important;
+      }
+      body.ucu-maintenance-sitewide main {
+        min-height: calc(85vh - 64px);
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding-top: 2rem !important;
+        padding-bottom: 2rem !important;
+      }
+
+      /* Mode B: Specific Page Maintenance (Header Nav Buttons & Footer remain VISIBLE) */
+      body.ucu-maintenance-page ucu-hero-banner,
+      body.ucu-maintenance-page ucu-sdg-page-hero,
+      body.ucu-maintenance-page ucu-sdg-layout,
+      body.ucu-maintenance-page ucu-indicator-layout,
+      body.ucu-maintenance-page ucu-sdg-ribbon,
+      body.ucu-maintenance-page ucu-modal-shell {
+        display: none !important;
+      }
+      body.ucu-maintenance-page main {
+        min-height: calc(75vh - 80px);
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding-top: 2.5rem !important;
+        padding-bottom: 2.5rem !important;
+        flex-grow: 1 !important;
+      }
+
+      /* Universal flex container rules for maintenance */
+      body.ucu-maintenance-page,
+      body.ucu-maintenance-sitewide {
+        min-height: 100vh !important;
+        display: flex !important;
+        flex-direction: column !important;
+      }
+      body.ucu-maintenance-active #ucu-maintenance-notice-container {
+        flex-grow: 1 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        width: 100% !important;
+        margin: auto !important;
+        min-height: 50vh !important;
+      }
+    `;
+
+    if (!notice) {
+      notice = document.createElement('div');
+      notice.id = 'ucu-maintenance-notice-container';
+    }
+
+    notice.className = isSiteWideOrHome
+      ? 'w-full max-w-[900px] mx-auto px-4 py-8 sm:py-16 text-center font-sans animate-fadeIn relative z-20'
+      : 'w-full max-w-[900px] mx-auto px-4 py-8 sm:py-16 text-center font-sans animate-fadeIn relative z-20 flex-1 flex items-center justify-center';
+
+    const sdgLayout = document.querySelector('ucu-sdg-layout');
+    let mainEl = sdgLayout ? null : (document.querySelector('body > main') || document.querySelector('main'));
+    const layoutEl = document.querySelector('body > ucu-sdg-layout, body > ucu-indicator-layout') || document.querySelector('ucu-sdg-layout, ucu-indicator-layout');
+    const footerEl = document.querySelector('body > ucu-footer, body > footer') || document.querySelector('ucu-footer');
+
+    if (mainEl) {
+      Array.from(mainEl.children).forEach(child => {
+        if (child.id !== 'ucu-maintenance-notice-container' && child.id !== 'ucu-curation-notice-container') {
+          if (child.dataset.originalDisplay === undefined) {
+            child.dataset.originalDisplay = child.style.display || '';
+          }
+          child.style.display = 'none';
+        }
+      });
+      if (!mainEl.contains(notice)) {
+        mainEl.appendChild(notice);
+      }
+    } else if (footerEl && footerEl.parentNode) {
+      if (notice.parentNode !== footerEl.parentNode || notice.nextSibling !== footerEl) {
+        footerEl.parentNode.insertBefore(notice, footerEl);
+      }
+    } else if (layoutEl && layoutEl.parentNode) {
+      if (notice.parentNode !== layoutEl.parentNode) {
+        layoutEl.parentNode.insertBefore(notice, layoutEl);
+      }
+    } else {
+      if (!document.body.contains(notice)) {
+        document.body.appendChild(notice);
+      }
+    }
+
+    notice.innerHTML = `
+      <div class="p-8 sm:p-14 rounded-3xl bg-white border border-slate-200/80 shadow-xl relative overflow-hidden flex flex-col items-center w-full">
+        <!-- Ambient background glow -->
+        <div class="absolute -top-24 -right-24 w-72 h-72 rounded-full bg-ucu-blue/5 blur-3xl pointer-events-none"></div>
+        <div class="absolute -bottom-24 -left-24 w-72 h-72 rounded-full bg-ucu-red/5 blur-3xl pointer-events-none"></div>
+
+        <!-- Institutional Floating Orbit Icon -->
+        <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-gradient-to-br from-ucu-blue-dark to-slate-900 border border-white/20 shadow-xl flex items-center justify-center mb-6 text-ucu-yellow relative">
+          <svg class="w-10 h-10 text-ucu-yellow animate-spin" style="animation-duration: 12s;" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+        </div>
+
+        <!-- Headline -->
+        <h2 class="text-2xl sm:text-4xl font-black text-ucu-blue-dark tracking-tight leading-tight max-w-2xl mb-4 font-sans">
+          ${escapeHtml(title)}
+        </h2>
+
+        <!-- Narrative -->
+        <p class="text-sm sm:text-base text-slate-600 font-medium leading-relaxed max-w-xl mx-auto font-sans">
+          ${escapeHtml(message)}
+        </p>
+
+        <!-- Card Footer Divider & Inquiries Contact Info -->
+        <div class="mt-8 pt-6 border-t border-slate-100 w-full max-w-lg mx-auto">
+          <p class="text-xs sm:text-[13px] text-slate-500 font-medium leading-relaxed font-sans">
+            For administrative, admissions, or general inquiries, please call <strong class="text-slate-700 font-bold">(075) 529-5223</strong> or email us at <a href="mailto:externalaffairsandlinkages@ucu.edu.ph" class="text-ucu-blue font-bold hover:underline">externalaffairsandlinkages@ucu.edu.ph</a>.
+          </p>
+        </div>
+      </div>
+    `;
+  }
+
+  function hideMaintenanceNotice() {
+    document.body.classList.remove('ucu-maintenance-active', 'ucu-maintenance-sitewide', 'ucu-maintenance-page');
+    const maintenanceStyle = document.getElementById('ucu-maintenance-style');
+    if (maintenanceStyle) maintenanceStyle.remove();
+
+    const notice = document.getElementById('ucu-maintenance-notice-container') || document.getElementById('ucu-curation-notice-container');
+    if (notice) notice.remove();
+
+    const badge = document.getElementById('preview-maintenance-badge');
+    if (badge) badge.remove();
+
+    const sdgLayout = document.querySelector('ucu-sdg-layout');
+    let mainEl = sdgLayout ? null : document.querySelector('main');
+    if (mainEl) {
+      Array.from(mainEl.children).forEach(child => {
+        if (child.id !== 'ucu-maintenance-notice-container' && child.id !== 'ucu-curation-notice-container') {
+          if (child.dataset.originalDisplay !== undefined) {
+            child.style.display = child.dataset.originalDisplay;
+            delete child.dataset.originalDisplay;
+          } else {
+            child.style.display = '';
+          }
+        }
+      });
+    }
+
+    const layoutEl = document.querySelector('ucu-sdg-layout, ucu-indicator-layout');
+    if (layoutEl) {
+      if (layoutEl.dataset.originalDisplay !== undefined) {
+        layoutEl.style.display = layoutEl.dataset.originalDisplay;
+        delete layoutEl.dataset.originalDisplay;
+      } else {
+        layoutEl.style.display = '';
+      }
+    }
+  }
+
+  // Backwards compatibility aliases
+  window.showMaintenanceNotice = showMaintenanceNotice;
+  window.showCurationNotice = showMaintenanceNotice;
+  window.hideMaintenanceNotice = hideMaintenanceNotice;
+  window.hideCurationNotice = hideMaintenanceNotice;
+
   /**
    * Apply live DOM changes based on CMS draft data
    */
   function applyLiveUpdate(section, data) {
     if (!section || !data) return;
-    if (!isSectionMatchingCurrentPage(section)) return;
+    if (!isSectionMatchingCurrentPage(section, data)) return;
+
+    // Check Maintenance / Curation State
+    let isMaintenanceActive = !!(data.isUnderMaintenance || data.isCurating || data.isGlobalMaintenance);
+    if (!isMaintenanceActive && section.type === 'sdg' && data.isUnderMaintenance === undefined && data.isCurating === undefined) {
+      const goalMaint = isPreviewMode
+        ? (localStorage.getItem(`UCU_SDG_${section.id}_MAINTENANCE`) || localStorage.getItem(`UCU_PUBLISHED_SDG_${section.id}_MAINTENANCE`))
+        : localStorage.getItem(`UCU_PUBLISHED_SDG_${section.id}_MAINTENANCE`);
+      if (goalMaint === 'true') {
+        isMaintenanceActive = true;
+      }
+    }
+
+    if (isMaintenanceActive) {
+      showMaintenanceNotice({
+        ...data,
+        isSiteWide: !!(data.isGlobalMaintenance || section.type === 'home')
+      });
+      if (isPreviewMode) {
+        updatePreviewMaintenanceBadge(true);
+      }
+      return;
+    } else {
+      hideMaintenanceNotice();
+      if (isPreviewMode) {
+        updatePreviewMaintenanceBadge(false);
+      }
+    }
 
     // A. SDG Narrative Pages
     if (section.type === 'sdg') {
@@ -876,8 +1175,9 @@
             const modalShell = document.createElement('ucu-modal-shell');
             modalShell.setAttribute('modal-id', docId);
             modalShell.setAttribute('title', ev.title || '');
-            modalShell.setAttribute('badge', ev.badge || '');
-            modalShell.setAttribute('content-src', ev.src || `../evidence/${section.id}/${docId}.html`);
+            const defaultBase = typeof window.ucuGetBasePath === 'function' ? window.ucuGetBasePath() : '../';
+            const fallbackSrc = `${defaultBase}evidence/${section.id}/${docId}.html`;
+            modalShell.setAttribute('content-src', ev.src ? resolveAssetPath(ev.src) : fallbackSrc);
             modalShell.setAttribute('data-blocks', blocksString);
             modalShell.setAttribute('data-sdgs', sdgsString);
             layout.appendChild(modalShell);
@@ -1210,6 +1510,46 @@
 
       const docKey = `${collection}__${docId}`;
       let hasHydratedIndicatorEvidences = false;
+
+      // 0. Check Global Site-Wide Maintenance Override
+      if (!isPreviewMode) {
+        const localHomeStored = localStorage.getItem('UCU_PUBLISHED_pages__home') || localStorage.getItem('UCU_PUBLISHED_home');
+        if (localHomeStored) {
+          try {
+            const hPayload = JSON.parse(localHomeStored);
+            const hData = hPayload.data || hPayload;
+            if (hData && (hData.isGlobalMaintenance || hData.isGlobalCurating || hData.isUnderMaintenance || hData.isCurating)) {
+              showMaintenanceNotice({
+                isSiteWide: true,
+                maintenanceTitle: 'Webpage Under Construction',
+                maintenanceMessage: hData.globalMaintenanceMessage || hData.globalCurationMessage || hData.maintenanceMessage || 'The External Affairs and Linkages Office is currently updating the web portal with verified institutional records and metrics. All sections will be accessible shortly. Thank you for your patience.'
+              });
+              return;
+            }
+          } catch(e) {}
+        }
+      }
+
+      // 0.5 Check SDG Goal-Level Maintenance (applies across all years for this specific SDG)
+      if (sectionType === 'sdg') {
+        const goalMaint = isPreviewMode
+          ? (localStorage.getItem(`UCU_SDG_${sectionId}_MAINTENANCE`) || localStorage.getItem(`UCU_PUBLISHED_SDG_${sectionId}_MAINTENANCE`))
+          : localStorage.getItem(`UCU_PUBLISHED_SDG_${sectionId}_MAINTENANCE`);
+        
+        if (goalMaint === 'true') {
+          showMaintenanceNotice({
+            maintenanceTitle: 'Webpage Under Construction',
+            maintenanceMessage: 'The External Affairs and Linkages Office is currently updating and maintaining verified institutional records and publications for this section. Verified content will be available shortly. Thank you for your patience.'
+          });
+          if (isPreviewMode) {
+            updatePreviewMaintenanceBadge(true);
+          }
+          return;
+        } else if (goalMaint === 'false' && isPreviewMode) {
+          hideMaintenanceNotice();
+          updatePreviewMaintenanceBadge(false);
+        }
+      }
 
       // 1. Check LocalStorage fallback first
       const localStored = localStorage.getItem(`UCU_PUBLISHED_${docKey}`) || 

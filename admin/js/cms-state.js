@@ -522,6 +522,264 @@ class CMSState {
     return null;
   }
 
+  async uploadAnnouncementImages(announcementIndex, fileList) {
+    if (!this.currentDraft) this.currentDraft = {};
+    if (!Array.isArray(this.currentDraft.list)) this.currentDraft.list = [];
+    if (!this.currentDraft.list[announcementIndex]) return;
+
+    const ann = this.currentDraft.list[announcementIndex];
+    if (!Array.isArray(ann.images)) {
+      ann.images = ann.image ? [ann.image] : [];
+    }
+
+    for (let i = 0; i < fileList.length; i++) {
+      if (ann.images.length >= 5) {
+        alert("Maximum of 5 images per announcement reached.");
+        break;
+      }
+      const encoded = await compressAndEncodeImage(fileList[i]);
+      if (encoded) {
+        ann.images.push(encoded);
+      }
+    }
+
+    ann.image = ann.images[0] || '';
+    if (ann.isFeatured) {
+      if (!this.currentDraft.featured) this.currentDraft.featured = {};
+      this.currentDraft.featured.images = [...ann.images];
+      this.currentDraft.featured.image = ann.image;
+    }
+
+    this.isDirty = true;
+    this.saveLocalDraft();
+    this.notify();
+    if (window.cmsForms) window.cmsForms.render();
+    previewBridge.sendLiveUpdate(this.currentDraft);
+  }
+
+  removeAnnouncementImage(announcementIndex, imageIndex) {
+    if (!this.currentDraft || !Array.isArray(this.currentDraft.list)) return;
+    const ann = this.currentDraft.list[announcementIndex];
+    if (!ann) return;
+
+    if (!Array.isArray(ann.images)) {
+      ann.images = ann.image ? [ann.image] : [];
+    }
+
+    ann.images.splice(imageIndex, 1);
+    ann.image = ann.images[0] || '';
+
+    if (ann.isFeatured) {
+      if (!this.currentDraft.featured) this.currentDraft.featured = {};
+      this.currentDraft.featured.images = [...ann.images];
+      this.currentDraft.featured.image = ann.image;
+    }
+
+    this.isDirty = true;
+    this.saveLocalDraft();
+    this.notify();
+    if (window.cmsForms) window.cmsForms.render();
+    previewBridge.sendLiveUpdate(this.currentDraft);
+  }
+
+  toggleFeaturedAnnouncement(index) {
+    if (!this.currentDraft) this.currentDraft = {};
+    if (!Array.isArray(this.currentDraft.list)) this.currentDraft.list = [];
+
+    const item = this.currentDraft.list[index];
+    if (!item) return;
+
+    const currentlyFeatured = !!item.isFeatured;
+    
+    // Exclusive single-featured rule:
+    // First set all announcements in the list to isFeatured: false
+    this.currentDraft.list.forEach(ann => { ann.isFeatured = false; });
+
+    // Toggle the selected announcement
+    item.isFeatured = !currentlyFeatured;
+
+    // Maintain draft.featured mirror for backwards compatibility
+    if (item.isFeatured) {
+      this.currentDraft.featured = { ...item };
+    } else {
+      this.currentDraft.featured = null;
+    }
+
+    this.isDirty = true;
+    this.saveLocalDraft();
+    this.notify();
+    if (window.cmsForms) window.cmsForms.render();
+    previewBridge.sendLiveUpdate(this.currentDraft);
+  }
+
+  toggleCurrentPageMaintenance(isMaintenance) {
+    if (!this.currentDraft) this.currentDraft = {};
+    const newStatus = isMaintenance !== undefined ? !!isMaintenance : !(this.currentDraft.isUnderMaintenance || this.currentDraft.isCurating);
+    this.currentDraft.isUnderMaintenance = newStatus;
+    this.currentDraft.isCurating = newStatus;
+    if (this.activeSection && this.activeSection.type === 'home') {
+      this.currentDraft.isGlobalMaintenance = newStatus;
+      this.currentDraft.isGlobalCurating = newStatus;
+    }
+    if (!this.currentDraft.maintenanceTitle || this.currentDraft.maintenanceTitle.includes('Curation') || this.currentDraft.maintenanceTitle.includes('Institutional Web Page Under Maintenance') || this.currentDraft.maintenanceTitle.includes('Website Under Construction')) {
+      this.currentDraft.maintenanceTitle = "Webpage Under Construction";
+    }
+    if (!this.currentDraft.maintenanceMessage) {
+      this.currentDraft.maintenanceMessage = "The External Affairs and Linkages Office is currently updating and maintaining verified institutional records and publications for this section. Verified content will be available shortly. Thank you for your patience.";
+    }
+
+    // Specific SDG: Apply maintenance across all years for this SDG goal
+    if (this.activeSection && this.activeSection.type === 'sdg') {
+      const sdgId = this.activeSection.id;
+      localStorage.setItem(`UCU_SDG_${sdgId}_MAINTENANCE`, String(newStatus));
+      ['2025', '2024', '2023'].forEach(y => {
+        const dKey = `UCU_DRAFT_sdg_narratives__sdg_${sdgId}_${y}`;
+        try {
+          const raw = localStorage.getItem(dKey);
+          let dData = raw ? JSON.parse(raw) : {};
+          let inner = dData.data || dData;
+          inner.isUnderMaintenance = newStatus;
+          inner.isCurating = newStatus;
+          inner.maintenanceTitle = this.currentDraft.maintenanceTitle;
+          inner.maintenanceMessage = this.currentDraft.maintenanceMessage;
+          localStorage.setItem(dKey, JSON.stringify({ data: inner, savedAt: new Date().toISOString() }));
+        } catch (e) {}
+      });
+    }
+
+    this.isDirty = true;
+    this.saveLocalDraft();
+    this.notify();
+    previewBridge.sendLiveUpdate(this.currentDraft);
+    return newStatus;
+  }
+
+  toggleCurrentPageCuration(isCurating) {
+    return this.toggleCurrentPageMaintenance(isCurating);
+  }
+
+  toggleGlobalMaintenance(isGlobal) {
+    if (!this.currentDraft) this.currentDraft = {};
+    const newStatus = isGlobal !== undefined ? !!isGlobal : !(this.currentDraft.isGlobalMaintenance || this.currentDraft.isGlobalCurating);
+    this.currentDraft.isGlobalMaintenance = newStatus;
+    this.currentDraft.isGlobalCurating = newStatus;
+    this.isDirty = true;
+    this.saveLocalDraft();
+    this.notify();
+    previewBridge.sendLiveUpdate(this.currentDraft);
+    return newStatus;
+  }
+
+  toggleGlobalCuration(isGlobal) {
+    return this.toggleGlobalMaintenance(isGlobal);
+  }
+
+  async batchToggleSdgMaintenance(isMaintenance, year = this.activeSection.year || '2025') {
+    for (let i = 1; i <= 17; i++) {
+      const docKey = `sdg_narratives__sdg_${i}_${year}`;
+      const publishedKey = `UCU_PUBLISHED_${docKey}`;
+      const draftKey = `UCU_DRAFT_${docKey}`;
+
+      let sdgData = {};
+      const localPub = localStorage.getItem(publishedKey);
+      if (localPub) {
+        try {
+          const p = JSON.parse(localPub);
+          sdgData = p.data || p;
+        } catch (e) {}
+      }
+      sdgData.isUnderMaintenance = !!isMaintenance;
+      sdgData.isCurating = !!isMaintenance;
+      
+      try {
+        localStorage.setItem(publishedKey, JSON.stringify({
+          data: sdgData,
+          publishedAt: new Date().toISOString()
+        }));
+        localStorage.setItem(draftKey, JSON.stringify({
+          data: sdgData,
+          savedAt: new Date().toISOString()
+        }));
+      } catch (e) {}
+
+      if (isFirebaseConfigured() && db) {
+        try {
+          const sdgRef = doc(db, 'sdg_narratives', `sdg_${i}_${year}`);
+          await setDoc(sdgRef, { isUnderMaintenance: !!isMaintenance, isCurating: !!isMaintenance, updatedAt: serverTimestamp() }, { merge: true });
+        } catch (e) {
+          console.warn(`[CMS State] Firestore batch SDG ${i} maintenance update skipped:`, e);
+        }
+      }
+    }
+
+    // If currently on an SDG page, reload active draft to reflect
+    if (this.activeSection.type === 'sdg') {
+      await this.loadActiveSectionData();
+    }
+    this.notify();
+    previewBridge.sendLiveUpdate(this.currentDraft);
+  }
+
+  async batchToggleSdgCuration(isCurating, year) {
+    return this.batchToggleSdgMaintenance(isCurating, year);
+  }
+
+  async batchToggleIndicatorMaintenance(isMaintenance) {
+    for (const pillar of INDICATOR_PILLARS) {
+      const docKey = `indicators__${pillar.id}`;
+      const publishedKey = `UCU_PUBLISHED_${docKey}`;
+      const draftKey = `UCU_DRAFT_${docKey}`;
+
+      let pillarData = {};
+      const localPub = localStorage.getItem(publishedKey);
+      if (localPub) {
+        try {
+          const p = JSON.parse(localPub);
+          pillarData = p.data || p;
+        } catch (e) {}
+      }
+      pillarData.isUnderMaintenance = !!isMaintenance;
+      pillarData.isCurating = !!isMaintenance;
+      pillarData.maintenanceTitle = "Webpage Under Construction";
+
+      try {
+        localStorage.setItem(publishedKey, JSON.stringify({
+          data: pillarData,
+          publishedAt: new Date().toISOString()
+        }));
+        localStorage.setItem(draftKey, JSON.stringify({
+          data: pillarData,
+          savedAt: new Date().toISOString()
+        }));
+      } catch (e) {}
+
+      if (isFirebaseConfigured() && db) {
+        try {
+          const indRef = doc(db, 'indicators', pillar.id);
+          await setDoc(indRef, { 
+            isUnderMaintenance: !!isMaintenance, 
+            isCurating: !!isMaintenance, 
+            maintenanceTitle: "Webpage Under Construction",
+            updatedAt: serverTimestamp() 
+          }, { merge: true });
+        } catch (e) {
+          console.warn(`[CMS State] Firestore batch Indicator ${pillar.id} maintenance update skipped:`, e);
+        }
+      }
+    }
+
+    // If currently on an indicator page, reload active draft to reflect
+    if (this.activeSection.type === 'indicator') {
+      await this.loadActiveSectionData();
+    }
+    this.notify();
+    previewBridge.sendLiveUpdate(this.currentDraft);
+  }
+
+  async batchToggleIndicatorCuration(isCurating) {
+    return this.batchToggleIndicatorMaintenance(isCurating);
+  }
+
   setFullDraft(draft, isDirty = false) {
     this.currentDraft = JSON.parse(JSON.stringify(draft));
     this.isDirty = isDirty;
@@ -579,6 +837,31 @@ class CMSState {
     this.notify();
   }
 
+  applyGoalMaintenanceToCurrentDraft() {
+    if (!this.currentDraft || !this.activeSection) return;
+    if (this.activeSection.type === 'sdg') {
+      const sdgId = this.activeSection.id;
+      const draftGoalMaint = localStorage.getItem(`UCU_SDG_${sdgId}_MAINTENANCE`);
+      const pubGoalMaint = localStorage.getItem(`UCU_PUBLISHED_SDG_${sdgId}_MAINTENANCE`);
+      
+      let isGoalMaint = null;
+      if (draftGoalMaint !== null) {
+        isGoalMaint = draftGoalMaint === 'true';
+      } else if (pubGoalMaint !== null) {
+        isGoalMaint = pubGoalMaint === 'true';
+      }
+
+      if (isGoalMaint !== null) {
+        this.currentDraft.isUnderMaintenance = isGoalMaint;
+        this.currentDraft.isCurating = isGoalMaint;
+        if (isGoalMaint) {
+          this.currentDraft.maintenanceTitle = this.currentDraft.maintenanceTitle || "Webpage Under Construction";
+          this.currentDraft.maintenanceMessage = this.currentDraft.maintenanceMessage || "The External Affairs and Linkages Office is currently updating and maintaining verified institutional records and publications for this section. Verified content will be available shortly. Thank you for your patience.";
+        }
+      }
+    }
+  }
+
   /**
    * Fetch data for active section (Firestore -> Local Draft -> Baseline Static)
    */
@@ -595,6 +878,7 @@ class CMSState {
           const cloudData = snap.data();
           const payloadData = cloudData.data || cloudData;
           this.setFullDraft({ ...baseline, ...payloadData, _cloudUpdatedAt: cloudData.updatedAt?.toDate?.() || cloudData.updatedAt }, false);
+          this.applyGoalMaintenanceToCurrentDraft();
           return this.currentDraft;
         }
       } catch (err) {
@@ -606,11 +890,13 @@ class CMSState {
     const local = this.getLocalDraft();
     if (local && local.data) {
       this.setFullDraft({ ...baseline, ...local.data }, true);
+      this.applyGoalMaintenanceToCurrentDraft();
       return this.currentDraft;
     }
 
     // 3. Fallback to baseline static data
     this.setFullDraft(baseline, false);
+    this.applyGoalMaintenanceToCurrentDraft();
     return this.currentDraft;
   }
 
@@ -691,6 +977,43 @@ class CMSState {
       }
     }
 
+    // 2.5 If SDG narrative, synchronize goal-level maintenance across all years
+    if (this.activeSection.type === 'sdg') {
+      const sdgId = this.activeSection.id;
+      const isMaint = !!(this.currentDraft.isUnderMaintenance || this.currentDraft.isCurating);
+      localStorage.setItem(`UCU_PUBLISHED_SDG_${sdgId}_MAINTENANCE`, String(isMaint));
+      localStorage.setItem(`UCU_SDG_${sdgId}_MAINTENANCE`, String(isMaint));
+      ['2025', '2024', '2023'].forEach(y => {
+        const pubKey = `UCU_PUBLISHED_sdg_narratives__sdg_${sdgId}_${y}`;
+        try {
+          const raw = localStorage.getItem(pubKey);
+          if (raw) {
+            const p = JSON.parse(raw);
+            const d = p.data || p;
+            d.isUnderMaintenance = isMaint;
+            d.isCurating = isMaint;
+            d.maintenanceTitle = this.currentDraft.maintenanceTitle || "Webpage Under Construction";
+            d.maintenanceMessage = this.currentDraft.maintenanceMessage || "The External Affairs and Linkages Office is currently updating and maintaining verified institutional records and publications for this section. Verified content will be available shortly. Thank you for your patience.";
+            localStorage.setItem(pubKey, JSON.stringify({ data: d, publishedAt: new Date().toISOString() }));
+          }
+        } catch (e) {}
+      });
+      if (isFirebaseConfigured() && db) {
+        ['2025', '2024', '2023'].forEach(async (y) => {
+          try {
+            const sdgRef = doc(db, 'sdg_narratives', `sdg_${sdgId}_${y}`);
+            await setDoc(sdgRef, {
+              isUnderMaintenance: isMaint,
+              isCurating: isMaint,
+              maintenanceTitle: this.currentDraft.maintenanceTitle || "Webpage Under Construction",
+              maintenanceMessage: this.currentDraft.maintenanceMessage || "The External Affairs and Linkages Office is currently updating and maintaining verified institutional records and publications for this section. Verified content will be available shortly. Thank you for your patience.",
+              updatedAt: serverTimestamp()
+            }, { merge: true });
+          } catch (e) {}
+        });
+      }
+    }
+
     // 3. Clear draft and broadcast live update across all tabs
     this.clearLocalDraft();
     this.isDirty = false;
@@ -720,6 +1043,11 @@ class CMSState {
       await deleteDoc(ref);
     }
     localStorage.removeItem(`UCU_PUBLISHED_${docKey}`);
+    if (this.activeSection && this.activeSection.type === 'sdg') {
+      const sdgId = this.activeSection.id;
+      localStorage.removeItem(`UCU_PUBLISHED_SDG_${sdgId}_MAINTENANCE`);
+      localStorage.removeItem(`UCU_SDG_${sdgId}_MAINTENANCE`);
+    }
     this.clearLocalDraft();
     const baseline = this.getBaselineData(this.activeSection);
     this.setFullDraft(baseline, false);

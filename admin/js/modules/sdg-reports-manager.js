@@ -195,6 +195,7 @@ export class SdgReportsManager {
           </div>
         </div>
 
+
         <!-- ========================================== -->
         <!-- ZONE 1: HERO & TOP OVERVIEW BLOCK EDITOR   -->
         <!-- ========================================== -->
@@ -639,6 +640,7 @@ export class SdgReportsManager {
         }
       });
     }
+
 
     // Hero Goal Title & Subtitle Fields
     const goalNameInput = container.querySelector('#sdg-field-goal-name');

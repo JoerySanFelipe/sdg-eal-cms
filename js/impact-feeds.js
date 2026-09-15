@@ -486,6 +486,12 @@ class UcuResearchFeed extends HTMLElement {
     const colors = window.UCU_SDG_COLORS || UCU_SDG_COLORS_MAP;
     const base = window.ucuGetBasePath ? window.ucuGetBasePath() : './';
 
+    // Read initial year and SDG filter
+    const urlParams = new URLSearchParams(window.location.search);
+    const attrYear = this.getAttribute('year');
+    const paramYear = urlParams.get('year');
+    const paramSdg = urlParams.get('sdg');
+
     // Extract available years dynamically
     const yearsSet = new Set();
     allResearch.forEach(p => {
@@ -501,6 +507,18 @@ class UcuResearchFeed extends HTMLElement {
       yearsSet.add('2023');
     }
     const availableYears = Array.from(yearsSet).sort((a, b) => b.localeCompare(a));
+
+    let initialYear = 'all';
+    if (attrYear && (attrYear === 'all' || availableYears.includes(attrYear))) {
+      initialYear = attrYear;
+    } else if (paramYear && (paramYear === 'all' || availableYears.includes(paramYear))) {
+      initialYear = paramYear;
+    }
+
+    let initialSdg = 'all';
+    if (paramSdg && (paramSdg === 'all' || (parseInt(paramSdg, 10) >= 1 && parseInt(paramSdg, 10) <= 17))) {
+      initialSdg = paramSdg;
+    }
 
     const cardsHtml = allResearch.map((paper) => {
       const paperYear = paper.year || (paper.date && paper.date.match(/\b(20\d{2}|19\d{2})\b/) ? paper.date.match(/\b(20\d{2}|19\d{2})\b/)[1] : '');
@@ -566,11 +584,11 @@ class UcuResearchFeed extends HTMLElement {
           
           <!-- Year Dropdown Filter -->
           <div class="flex items-center gap-2.5 shrink-0">
-            <span class="text-xs font-bold uppercase tracking-wider text-slate-500 shrink-0">Year:</span>
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-500 shrink-0 font-sans">Year:</span>
             <div class="relative">
-              <select id="research-year-select" class="pl-3 pr-8 py-1.5 text-xs font-bold rounded-xl border border-slate-200 bg-slate-50 text-slate-800 focus:ring-2 focus:ring-ucu-blue/20 focus:border-ucu-blue focus:bg-white cursor-pointer appearance-none">
-                <option value="all">All Years</option>
-                ${availableYears.map(y => `<option value="${y}">${y}</option>`).join('')}
+              <select id="research-year-select" class="pl-3 pr-8 py-1.5 text-xs font-bold rounded-xl border border-slate-200 bg-slate-50 text-slate-800 focus:ring-2 focus:ring-ucu-blue/20 focus:border-ucu-blue focus:bg-white cursor-pointer appearance-none font-sans">
+                <option value="all" ${initialYear === 'all' ? 'selected' : ''}>All Years</option>
+                ${availableYears.map(y => `<option value="${y}" ${initialYear === y ? 'selected' : ''}>${y}</option>`).join('')}
               </select>
               <svg class="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-2.5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
             </div>
@@ -578,16 +596,18 @@ class UcuResearchFeed extends HTMLElement {
 
           <!-- SDG Number Box Alignment Filter -->
           <div class="flex items-center gap-1.5 flex-wrap">
-            <span class="text-xs font-bold uppercase tracking-wider text-slate-500 mr-1 hidden sm:inline shrink-0">SDG:</span>
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-500 mr-1 hidden sm:inline shrink-0 font-sans">SDG:</span>
             
-            <button type="button" data-filter="all" class="filter-btn !w-auto min-w-[36px] !h-8 px-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer bg-ucu-blue-dark text-white shadow-2xs border border-ucu-blue-dark shrink-0 flex items-center justify-center" data-active="true">
+            <button type="button" data-filter="all" class="filter-btn !w-auto min-w-[36px] !h-8 px-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${initialSdg === 'all' ? 'bg-ucu-blue-dark text-white shadow-2xs border border-ucu-blue-dark' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200/80'} shrink-0 flex items-center justify-center font-sans" data-active="${initialSdg === 'all'}">
               All
             </button>
 
             ${[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17].map(num => {
               const color = colors[num] || '#24305e';
+              const isActive = initialSdg === String(num);
+              const activeStyle = isActive ? `style="background-color: ${color}; color: white; border-color: ${color};"` : '';
               return `
-                <button type="button" data-filter="${num}" data-color="${color}" class="filter-btn !w-8 !h-8 rounded-lg text-xs font-black transition-all cursor-pointer flex items-center justify-center bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200/80 shrink-0" data-active="false" title="SDG ${num}">
+                <button type="button" data-filter="${num}" data-color="${color}" ${activeStyle} class="filter-btn !w-8 !h-8 rounded-lg text-xs font-black transition-all cursor-pointer flex items-center justify-center ${isActive ? 'shadow-xs font-black scale-105' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200/80'} shrink-0 font-sans" data-active="${isActive}" title="SDG ${num}">
                   ${num}
                 </button>
               `;
@@ -601,8 +621,12 @@ class UcuResearchFeed extends HTMLElement {
       <section class="w-full">
         <div class="flex flex-col gap-6" id="research-feed">
           ${cardsHtml}
-          <div id="empty-state" class="hidden py-16 text-center w-full bg-white/70 border border-dashed border-slate-200 rounded-2xl">
-            <p class="text-slate-600 text-sm font-bold">No research publications found matching your filter selection.</p>
+          <div id="empty-state" class="${allResearch.length === 0 ? '' : 'hidden'} py-16 text-center w-full bg-white border border-slate-200 rounded-2xl shadow-2xs">
+            <div class="w-12 h-12 rounded-full bg-slate-100 text-slate-400 mx-auto flex items-center justify-center mb-3">
+              <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <p class="text-slate-700 text-xs font-bold uppercase tracking-wider font-sans">No research found for this specific goal or year.</p>
+            <p class="text-slate-400 text-xs mt-1 font-sans">Try selecting "All" or choosing another year.</p>
           </div>
         </div>
       </section>
@@ -614,8 +638,8 @@ class UcuResearchFeed extends HTMLElement {
       const cards = this.querySelectorAll(".research-card");
       const emptyState = this.querySelector("#empty-state");
 
-      let selectedYear = "all";
-      let selectedSdg = "all";
+      let selectedYear = initialYear;
+      let selectedSdg = initialSdg;
 
       const applyFilters = () => {
         let visibleCount = 0;
@@ -641,9 +665,20 @@ class UcuResearchFeed extends HTMLElement {
         });
 
         if (emptyState) {
-          emptyState.style.display = visibleCount === 0 ? "block" : "none";
+          if (visibleCount === 0) {
+            emptyState.classList.remove("hidden");
+            emptyState.style.display = "block";
+          } else {
+            emptyState.classList.add("hidden");
+            emptyState.style.display = "none";
+          }
         }
       };
+
+      // Apply initial filter if not all/all or empty
+      if (selectedYear !== 'all' || selectedSdg !== 'all' || cards.length === 0) {
+        applyFilters();
+      }
 
       // Bind direct PDF Open listener
       this.querySelectorAll(".btn-open-research-pdf").forEach((btn) => {

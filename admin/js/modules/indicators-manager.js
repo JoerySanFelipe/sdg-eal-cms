@@ -222,6 +222,7 @@ export class IndicatorsManager {
           </div>
         </div>
 
+
         <!-- Section 1: Navigation Image -->
         <div class="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
           <div class="flex items-center gap-2.5 pb-3 border-b border-slate-100">
@@ -406,6 +407,7 @@ export class IndicatorsManager {
     const draft = cmsState.currentDraft || {};
     const pillarId = cmsState.activeSection.id || 'infrastructure';
     const pillar = INDICATOR_PILLARS.find(p => p.id === pillarId) || { id: pillarId, title: "Setting & Infrastructure", num: "01", img: "images/smart-eco-assets/setting_and_infrastructure.jpg" };
+
 
     // 1. Two-way data binding for textareas and text inputs
     container.querySelectorAll('[data-bind]').forEach(el => {

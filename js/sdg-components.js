@@ -158,13 +158,14 @@ class SdgCard extends HTMLElement {
 class SdgSeeAllCard extends HTMLElement {
   connectedCallback() {
     const link = this.getAttribute("explore-link") || "#";
+    const base = window.ucuGetBasePath ? window.ucuGetBasePath() : './';
     this.className =
       "relative flex flex-col items-center justify-center p-5 aspect-[9/16] group cursor-pointer transition-all duration-500 focus:outline-none focus:ring-4 focus:ring-inset focus:ring-[#24305e] block isolate overflow-hidden bg-slate-900 border border-slate-700 shadow-sm hover:shadow-xl hover:-translate-y-1";
     this.setAttribute("tabindex", "0");
 
     this.innerHTML = `
       <a href="${link}" class="absolute inset-0 z-30 flex flex-col items-center justify-center no-underline focus:outline-none w-full h-full text-white" aria-label="Explore all 17 Goals">
-        <img src="../images/sdg/bg/sdg-circle.svg" alt="" aria-hidden="true" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[220%] max-w-[500px] h-auto object-contain z-0 opacity-10 transition-transform duration-[2s] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:rotate-[30deg] group-hover:scale-110 group-focus:rotate-[30deg]" loading="lazy" />
+        <img src="${base}images/sdg/bg/sdg-circle.svg" alt="" aria-hidden="true" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[220%] max-w-[500px] h-auto object-contain z-0 opacity-10 transition-transform duration-[2s] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:rotate-[30deg] group-hover:scale-110 group-focus:rotate-[30deg]" loading="lazy" />
         <div class="absolute inset-0 bg-black/40 z-[5] pointer-events-none"></div>
         <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent z-10 pointer-events-none transition-opacity duration-700 group-hover:opacity-100 opacity-0"></div>
         <div class="relative z-20 flex flex-col items-center gap-3 transition-transform duration-500 group-hover:-translate-y-1 group-focus:-translate-y-1">
@@ -204,8 +205,10 @@ class UcuSdgPageHero extends HTMLElement {
     const title = this.getAttribute("title") || "";
     const subtitle = this.getAttribute("subtitle") || "";
     const hex = this.getAttribute("hex") || colors[sdgAttr] || "#E5243B";
-    const bgImage = this.getAttribute("bg-image") || "";
-    const iconImage = this.getAttribute("icon-image") || "";
+    const rawBgImage = this.getAttribute("bg-image") || "";
+    const rawIconImage = this.getAttribute("icon-image") || "";
+    const bgImage = window.ucuResolveMediaSrc ? window.ucuResolveMediaSrc(rawBgImage) : rawBgImage;
+    const iconImage = window.ucuResolveMediaSrc ? window.ucuResolveMediaSrc(rawIconImage) : rawIconImage;
 
     const rightFadeColor = hex + "D9";
 
@@ -414,7 +417,9 @@ class UcuSdgLayout extends HTMLElement {
             : "";
           
           let resolvedPdfLink = res.pdfLink;
-          if (resolvedPdfLink && resolvedPdfLink.startsWith("../")) {
+          if (window.ucuResolveMediaSrc && resolvedPdfLink && resolvedPdfLink !== "#") {
+            resolvedPdfLink = window.ucuResolveMediaSrc(resolvedPdfLink, base);
+          } else if (resolvedPdfLink && resolvedPdfLink.startsWith("../")) {
             resolvedPdfLink = base + resolvedPdfLink.substring(3);
           }
           

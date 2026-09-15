@@ -121,8 +121,9 @@ class UcuHeader extends HTMLElement {
 
     const base = this.getAttribute("base-path") || "./";
     const currentPath = window.location.pathname;
+    const isCmsPreview = window.self !== window.top || window.location.search.includes('cms_preview=true') || window.location.search.includes('preview=true');
 
-    const mainNavLinks = [
+    const allNavLinks = [
       { name: "Home", url: "index.html" },
       { name: "Announcements", url: "announcement.html" },
       { name: "SDG Reports", url: "sdg-reports.html" },
@@ -132,6 +133,10 @@ class UcuHeader extends HTMLElement {
       { name: "Partnerships", url: "partnership.html" },
       { name: "Smart Eco Campus", url: "smart-eco-campus.html" },
     ];
+
+    const mainNavLinks = isCmsPreview 
+      ? allNavLinks 
+      : allNavLinks.filter(link => link.name !== "Announcements");
 
     const isActive = (url) => {
       if (url === "index.html") return currentPath.endsWith("/") || currentPath.endsWith("index.html");
@@ -386,6 +391,7 @@ class UcuFooter extends HTMLElement {
     this.hasRendered = true;
 
     const base = this.getAttribute("base-path") || "./";
+    const isCmsPreview = window.self !== window.top || window.location.search.includes('cms_preview=true') || window.location.search.includes('preview=true');
 
     this.innerHTML = `
       <footer class="mt-10 w-full relative overflow-hidden border-t-[4px] border-ucu-red font-sans pb-8" style="
@@ -408,7 +414,7 @@ class UcuFooter extends HTMLElement {
             <h3 class="text-ucu-yellow mb-4 font-bold tracking-widest uppercase text-[11px]">Quick Links</h3>
             <nav class="flex flex-col gap-2.5">
               <a href="${base}index.html" class="text-white/80 hover:text-ucu-yellow text-[13px] font-medium transition-colors">Home</a>
-              <a href="${base}announcement.html" class="text-white/80 hover:text-ucu-yellow text-[13px] font-medium transition-colors">Announcements</a>
+              ${isCmsPreview ? `<a href="${base}announcement.html" class="text-white/80 hover:text-ucu-yellow text-[13px] font-medium transition-colors">Announcements</a>` : ''}
               <a href="${base}sdg-reports.html" class="text-white/80 hover:text-ucu-yellow text-[13px] font-medium transition-colors">SDG Reports</a>
               <a href="${base}research.html" class="text-white/80 hover:text-ucu-yellow text-[13px] font-medium transition-colors">Research</a>
               <a href="${base}impact.html" class="text-white/80 hover:text-ucu-yellow text-[13px] font-medium transition-colors">Impact & Events</a>

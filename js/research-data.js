@@ -12,7 +12,7 @@ window.UCU_RESEARCH = [
     abstract: "This study evaluates the intersection of adolescent health and academic performance in Northern Luzon. By deploying targeted digital health tracking within the localized curriculum, the research demonstrates a significant correlation between well-being interventions and improved scholastic retention rates among marginalized communities.",
     sdgs: [3, 4],
     keywords: ["Adolescent Health", "Digital Health", "Scholastic Retention"],
-    pdfLink: "../documents/santos-et-al.pdf",
+    pdfLink: "documents/santos-et-al.pdf",
     pdfFileName: "santos-et-al.pdf",
     pdfFileSize: "1.8 MB"
   },
